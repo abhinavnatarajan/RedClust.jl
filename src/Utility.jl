@@ -111,6 +111,7 @@ function generatemixture(N, K; α = K, dim = K, radius = 1, σ = 0.1)
     return (pnts = pnts, distM = distM, clusts = clusts, probs = probs, oracle_coclustering = oracle_coclustering)
 end
 
+"Convert a vector of vectors into a matrix, where each vector becomes a column in the matrix."
 function makematrix(x::Vector{Vector{T}})::Matrix where {T}
     [x[i][j] for j in 1:length(x[1]), i in 1:length(x)]
 end
