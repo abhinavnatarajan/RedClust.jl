@@ -53,5 +53,6 @@ jobs:
             using RedClust
             DocMeta.setdocmeta!(RedClust, :DocTestSetup, :(using RedClust); recursive=true)
             doctest(RedClust)'
+      - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
