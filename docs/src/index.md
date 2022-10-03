@@ -8,16 +8,18 @@ CurrentModule = RedClust
 
 ## Installation
 The package can be installed with 
-
+'''julia
 	]add RedClust
+'''
 or
-
+'''julia
 	using Pkg
 	Pkg.add("RedClust")
+'''
 RedClust also requires [R](https://www.r-project.org/), and the R packages [salso](https://CRAN.R-project.org/package=salso) and [cluster](https://cran.r-project.org/package=cluster). If these are already installed, make sure the `R_HOME` environment variable is set to the `R` home directory. You could run `R.home()` in `R` to determine the location of this directory. If `R`, `salso`, and `cluster` are not found, they will be automatically installed by the Julia package [RCall.jl](https://github.com/JuliaInterop/RCall.jl). 
 
 ## Basic example
-
+'''julia
 	using RedClust
 	# Generate data
 	pnts, distM, clusts, probs, oracle_coclustering = generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim)
@@ -28,7 +30,7 @@ RedClust also requires [R](https://www.r-project.org/), and the R packages [sals
 	data = MCMCData(D = distM)
 	# Run the sampler
 	result = runsampler(data, options, params)
-
+'''
 ## Model
 RedClust implements the model described in Natarajan et al. (2022). The key features are-
 1. The use of a random partition model with an unknown number of clusters ``K`` which allows for posterior inference on ``K``. That is, there is a prior distribution on the space of all possible clustering structures with any number of clusters from one to the number of observations. The number of clusters is an object of inference to be determined by MCMC sampling. 

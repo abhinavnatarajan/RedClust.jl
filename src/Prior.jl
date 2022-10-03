@@ -12,7 +12,7 @@ Compute the prior hyperparameters from the data.
 
 # Arguments
 - `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 
-- `algo::String`: must be one of "k-means" or "k-medoids".
+- `algo::String`: must be one of `"k-means"` or `"k-medoids"`.
 - `dist::bool = false`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
 - `Kmin::Integer`: minimum number of clusters.
 - `Kmax::Integer = Int(floor(size(data)[end] / 2))`: maximum number of clusters. If left unspecified, it is set to half the number of observations.
