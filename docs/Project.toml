@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+RedClust = "bf1adee6-87fe-4679-8d23-51fe99940a25"
