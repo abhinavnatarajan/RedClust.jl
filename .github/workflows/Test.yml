@@ -9,7 +9,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        julia-version: ['1.7']
+        julia-arch: [x64, x86]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2
