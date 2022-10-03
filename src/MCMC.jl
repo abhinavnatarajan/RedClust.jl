@@ -306,7 +306,7 @@ function sample_labels!(
         end
 
         # choose elements to reallocate
-        S = findall((clusts .== ci) .|| (clusts .== cj))
+        S = findall(clusts .== ci .|| clusts .== cj)
         S = S[S .!= i .&& S .!= j]
         
         # initialise random launch state
