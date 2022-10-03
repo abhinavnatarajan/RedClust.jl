@@ -16,7 +16,7 @@ or
 
 	using Pkg
 	Pkg.add("RedClust")
-RedClust also requires [R](https://www.r-project.org/) version 4.0.0 or above, and the R packages [salso](https://CRAN.R-project.org/package=salso) and [cluster](https://cran.r-project.org/package=cluster). 
+RedClust also requires [R](https://www.r-project.org/), and the R packages [salso](https://CRAN.R-project.org/package=salso) and [cluster](https://cran.r-project.org/package=cluster). If these are already installed, make sure the `R_HOME` environment variable is set to the `R` home directory. You could run `R.home()` in `R` to determine the location of this directory. If `R`, `salso`, and `cluster` are not found, they will be automatically installed by the Julia package [RCall.jl](https://github.com/JuliaInterop/RCall.jl). 
 
 ## Basic example
 
