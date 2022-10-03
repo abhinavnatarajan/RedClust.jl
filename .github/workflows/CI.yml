@@ -47,7 +47,11 @@ jobs:
           version: '1.6'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
+      - run: |
+          julia --project=docs -e '
+            using Documenter: DocMeta, doctest
+            using RedClust
+            DocMeta.setdocmeta!(RedClust, :DocTestSetup, :(using RedClust); recursive=true)
+            doctest(RedClust)'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-      - run: julia --project=docs/ docs/make.jl
