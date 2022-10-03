@@ -21,6 +21,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/abhinavnatarajan/RedClust.jl.git",
-    devbranch="main",
+    repo="github.com/abhinavnatarajan/RedClust.jl"
 )
