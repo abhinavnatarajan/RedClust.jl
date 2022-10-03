@@ -8,7 +8,7 @@ using RCall: rcopy, @R_str
 """
     fitprior(data, algo, dist = false, Kmin = 1, Kmax = Int(floor(size(data)[end] / 2))
 
-Compute the prior hyperparameters from the data. 
+Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
 
 # Arguments
 - `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 

@@ -1,8 +1,10 @@
 # RedClust
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://abhinavnatarajan.github.io/RedClust.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://abhinavnatarajan.github.io/RedClust.jl/dev/)
-[![Build Status](https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/Test.yml/badge.svg?branch=master)](https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/Test.yml?query=branch%3Amaster)
+[![Stable](https://img.shields.io/badge/docs-stable-blue?style=flat-square)](https://abhinavnatarajan.github.io/RedClust.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue?style=flat-square)](https://abhinavnatarajan.github.io/RedClust.jl/dev/)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/Run%20tests/master?style=flat-square)
+![GitHub](https://img.shields.io/github/license/abhinavnatarajan/RedClust.jl?style=flat-square)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/abhinavnatarajan/RedClust.jl?style=flat-square) 
 
 ## Introduction
 

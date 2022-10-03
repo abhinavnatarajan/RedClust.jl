@@ -1,5 +1,3 @@
-# REQUIRES R > 4.0.1, AND R PACKAGES "CLUSTER" AND "SALSO"
-
 using RedClust
 using Random: seed!
 using CairoMakie
@@ -27,7 +25,7 @@ fig2
 params = fitprior(pnts, "k-means", false).params
 
 # MCMC options
-options = MCMCOptionsList(usesalso = false)
+options = MCMCOptionsList(usesalso = true)
 data = MCMCData(D = distM)
 
 # Run the sampler
@@ -60,5 +58,5 @@ p_hist = Figure(resolution = (400, 300), fontsize = 20)
 ax = Axis(p_hist[1, 1])
 hist!(ax, result.p, bins = 25)
 p_hist
-# Summary of point estimate
-summarise(result, clusts)
+# Summary of MCMC and point estimate
+summarise(result, clusts);

@@ -35,9 +35,9 @@ function summarise(clusts::ClustLabelVector, truth::ClustLabelVector)::String
     output *= "Clustering summary\n"
     output *= "Number of clusters : $(length(unique(clusts)))\n"
     output *= "Normalised Binder loss : $(temp.bloss)\n"
-    output *= "Variation of information distance : $(temp.vidist)\n"
-    output *= "Adjusted rand index : $(temp.ari)\n"
-    output *= "Normalised mutual information : $(temp.nmi)\n"
+    output *= "Variation of Information distance : $(temp.vidist)\n"
+    output *= "Adjusted Rand Index : $(temp.ari)\n"
+    output *= "Normalised Mutual Information : $(temp.nmi)\n"
     output *= "V-Measure : $(temp.vmeas)\n"
     return output
 end
@@ -86,9 +86,9 @@ function summarise(result::MCMCResult, truth::ClustLabelVector=[], printoutput=t
         output *= "Clustering summary\n"
         output *= "Number of clusters : $(length(unique(result.pntestimate)))\n"
         output *= "Normalised Binder loss : $(temp.bloss)\n"
-        output *= "Variation of information distance : $(temp.vidist)\n"
-        output *= "Adjusted rand index : $(temp.ari)\n"
-        output *= "Normalised mutual information : $(temp.nmi)\n"
+        output *= "Variation of Information distance : $(temp.vidist)\n"
+        output *= "Adjusted Rand Index : $(temp.ari)\n"
+        output *= "Normalised Mutual Information : $(temp.nmi)\n"
         output *= "V-Measure : $(temp.vmeas)\n"
     end
     if printoutput print(output) end
@@ -97,8 +97,13 @@ end
 
 function binderloss(
     a::ClustLabelVector,
-    b::ClustLabelVector
+    b::ClustLabelVector,
+    normalised = true
     )::Float64
-    n = length(a)
-    sum(abs.(adjacencymatrix(a) .- adjacencymatrix(b))) / (n * (n - 1))
+    loss = sum(abs.(adjacencymatrix(a) .- adjacencymatrix(b)))
+    if normalised 
+        n = length(a)
+        loss /= n * (n - 1)
+    end
+    return loss
 end

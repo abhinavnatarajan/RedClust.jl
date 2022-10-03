@@ -470,22 +470,8 @@ function runsampler(data::MCMCData,
 
     # Point estimate
     # Get point estimate using the salso package in R
-    if options.usesalso
-        clustsM = makematrix(result.clusts)'
-        result.pntestimate = rcopy(R"""
-        library(salso)
-        salso($clustsM)
-        """)
-    else
-        npts = size(data.D, 1)
-        minscore = Inf
-        for i = 1:numsamples
-            temp = mean(varinfo.(result.clusts, Ref(result.clusts[i])))
-            if temp  < minscore
-                minscore = temp
-                result.pntestimate .= result.clusts[i]
-            end
-        end
+    if options.pointestimation
+        result.pntestimate = pointestimate(result.clusts, "VI", options.usesalso)
     end
 
 

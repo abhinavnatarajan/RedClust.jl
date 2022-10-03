@@ -2,36 +2,8 @@ using StatsBase: autocor, wsample, levelsmap
 using Distributions: Dirichlet, MvNormal, pdf
 using LinearAlgebra: I
 using Random: rand
-
-"""
-    adjacencymatrix(clusts::ClustLabelVector)
-Returns the `n`x`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`. 
-""" 
-function adjacencymatrix(
-    clusts::ClustLabelVector
-    )::Matrix{Bool}
-	clusts .== clusts'
-end
-
-
-
-function uppertriangle(
-    M::Matrix{T}
-    )::Vector{T} where {T}
-	n = size(M, 1)
-	[M[i, j] for i in 1:n for j in (i + 1):n]
-end
-
-"""
-    sortlabels(x::ClustLabelVector)
-Returns a cluster label vector `y` such that `x` and `y` have the same adjacency structure and labels in `y` occur in sorted ascending order.
-"""
-function sortlabels(
-    x::ClustLabelVector
-    )::ClustLabelVector 
-    temp = levelsmap(x)
-    [temp[i] for i in x]
-end
+using Match
+using RCall: @R_str, rcopy
 
 function numpairs(n::Int)::Int
     Integer(n * (n - 1) / 2)
@@ -49,6 +21,34 @@ function iac_ess_acf(x::AbstractVector{<:Real})
     iac = sum(acf) * 2
     ess = length(x) / iac
     return (iac = iac, ess = ess, acf = acf)
+end
+
+"""
+    adjacencymatrix(clusts::ClustLabelVector)
+Returns the `n`x`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`. 
+""" 
+function adjacencymatrix(
+    clusts::ClustLabelVector
+    )::Matrix{Bool}
+	clusts .== clusts'
+end
+
+function uppertriangle(
+    M::Matrix{T}
+    )::Vector{T} where {T}
+	n = size(M, 1)
+	[M[i, j] for i in 1:n for j in (i + 1):n]
+end
+
+"""
+    sortlabels(x::ClustLabelVector)
+Returns a cluster label vector `y` such that `x` and `y` have the same adjacency structure and labels in `y` occur in sorted ascending order.
+"""
+function sortlabels(
+    x::ClustLabelVector
+    )::ClustLabelVector 
+    temp = levelsmap(x)
+    [temp[i] for i in x]
 end
 
 """
@@ -115,6 +115,41 @@ end
 function makematrix(x::Vector{Vector{T}})::Matrix where {T}
     [x[i][j] for j in 1:length(x[1]), i in 1:length(x)]
 end
+
+"""
+    pointestimate(clusts::Vector{ClustLabelVector}, loss = "VI", usesalso = false)
+Computes a point estimate from a vector of samples of cluster allocations by searching for a minimiser of the posterior expectation of some loss function. 
+
+# Arguments 
+- `loss::String`: must be either `"VI"` or `"binder"`. Determines the loss function as either the Variation of Information distance or Binder loss. 
+`usesalso::Bool`: if true, the SALSO algorithm is used. If false, the search space is restricted to the list of samples passed to the function.
+"""
+function pointestimate(clusts::Vector{ClustLabelVector}, loss = "VI", usesalso = false)
+    if usesalso
+        clustsM = makematrix(clusts)'
+        pntestimate = rcopy(R"""
+        library(salso)
+        salso($clustsM, loss = $loss)
+        """)
+    else
+        pntestimate = zeros(Int, length(clusts[1]))
+        lossfn = @match loss begin
+            "VI"        => varinfo
+            "binder"    => (x, y) -> binderloss(x, y, false)
+        end
+        npts = length(clusts[1])
+        minscore = Inf
+        for clust in clusts
+            temp = mean(lossfn.(clusts, Ref(clust)))
+            if temp  < minscore
+                minscore = temp
+                pntestimate .= clust
+            end
+        end
+    end
+    return pntestimate
+end
+
 
 
 

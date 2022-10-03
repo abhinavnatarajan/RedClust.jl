@@ -9,7 +9,7 @@ const _numMH_default = 1
 List of options for running the MCMC. 
 
 Constructor:
-    MCMCOptionsList(; [numiters, burnin, thin, numGibbs, numMH, usesalso])
+    MCMCOptionsList(; [numiters, burnin, thin, numGibbs, numMH, pointestimation, usesalso])
 
 # Constructor arguments
 - `numiters::Integer = 5000`: number of iterations to run.
@@ -17,7 +17,8 @@ Constructor:
 - `thin::Integer = 1`: will keep every `thin` samples.
 - `numGibbs:Integer = 1`: number of intermediate Gibbs scans in the split-merge step.
 - `numMH:Integer = 1`: number of split-merge steps per MCMC iteration.
-- `usesalso::Bool = true`: whether to use the SALSO algorithm to compute a point estimate.
+- `pointestimation::Bool = true`: whether to compute a point-estimate clustering from the posterior samples.
+- `usesalso::Bool = false`: whether to use the SALSO algorithm to compute a point estimate.
 """
 Base.@kwdef struct MCMCOptionsList
     numiters::Int = 5000
@@ -25,7 +26,8 @@ Base.@kwdef struct MCMCOptionsList
     thin::Int = 1
     numGibbs::Int = _numGibbs_default
     numMH::Int = _numMH_default
-    usesalso::Bool = true    
+    pointestimation::Bool = true
+    usesalso::Bool = false 
     numsamples::Int = Int(floor((numiters - burnin) / thin))
 end
 
@@ -87,8 +89,10 @@ end
 """
 Struct containing MCMC samples. 
 # Fields
+- `options::MCMCOptionsList`: options passed to the sampler. 
+- `params::PriorHyperparamsList`: prior hyperparameters used by the sampler. 
 - `clusts::Vector{ClustLabelVector}`: contains the clustering allocations. `clusts[i]` is a vector containing the clustering allocation from the `i`th sample. 
-- `pntestimate::ClustLabelVector}`: contains the point-estimate clustering allocation. 
+- `pntestimate::ClustLabelVector`: contains the point-estimate clustering allocation. If `options.pointestimation == false` then this is a vector of zeros. 
 - `posterior_coclustering::Matrix{Float64}`: the posterior coclustering matrix. 
 - `K::Vector{Int}`: posterior samples of ``K``, i.e., the number of clusters. `K[i]` is the number of clusters in `clusts[i]`.
 - `r::Vector{Float64}`: posterior samples of the parameter ``r``.
@@ -105,8 +109,6 @@ Struct containing MCMC samples.
 - `r_acceptance_rate:`: Metropolis-Hastings acceptance rate for `r`.
 - `runtime`: total runtime for all iterations.
 - `mean_iter_time`: average time taken for each iteration. 
-- `options::MCMCOptionsList`: options passed to the sampler. 
-- `params::PriorHyperparamsList`: prior hyperparameters used by the sampler. 
 """
 Base.@kwdef mutable struct MCMCResult
     clusts::Vector{ClustLabelVector}

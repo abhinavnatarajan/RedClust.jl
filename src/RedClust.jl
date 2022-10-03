@@ -10,7 +10,7 @@ include("./SummaryFunctions.jl")
 
 
 export fitprior, runsampler, # main functions
-adjacencymatrix, sortlabels, uppertriangle, generatemixture, makematrix, # convenience
+adjacencymatrix, sortlabels, uppertriangle, generatemixture, makematrix, pointestimate, # convenience
 evaluateclustering, summarise, # summary functions 
 MCMCOptionsList, PriorHyperparamsList, MCMCData, MCMCResult # types
 
