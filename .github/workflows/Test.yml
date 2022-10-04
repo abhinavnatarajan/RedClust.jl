@@ -1,0 +1,31 @@
+name: Run tests
+
+on:
+  push:
+    branches:
+      - master # update to match your development branch (master, main, dev, trunk, ...)
+    tags: '*'
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        julia-version: ['1.7', '1.8']
+        julia-arch: [x64]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.julia-version }}
+          arch: ${{ matrix.julia-arch }}
+      - name: Build package
+        uses: julia-actions/julia-buildpkg@v1
+      - name: Run unit tests
+        uses: julia-actions/julia-runtest@v1
+        with:
+          annotate: true
