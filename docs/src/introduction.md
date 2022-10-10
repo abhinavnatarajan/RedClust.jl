@@ -39,13 +39,17 @@ The prior on the clustering structure can be chosen according to application in 
 ```math
 \underbrace{1, \ldots, 1}_{n_1 \text{ times}}, \ldots, \underbrace{K, \ldots, K}_{n_K \text{ times}}
 ```
-RedClust implements a microclustering prior with ``\nu`` a shifted negative binomial with random parameters ``r`` and ``p``. 
+RedClust implements a microclustering prior with ``\nu`` a shifted negative binomial with random parameters ``r`` and ``p``, which are sampled from a Gamma and Beta distribution respectively.
 ```math
 \begin{align*}
 r &\sim \mathrm{Gamma}(\eta, \sigma)\\
-p &\sim \mathrm{Beta}(u, v)\\
-\pi(\rho_n \mid r, p) &\propto K! p^{n-K}(1-p)^{rK}\Gamma(r)^{-K}\prod_{k=1}^K n_k \Gamma(n_k+r-1)
+p &\sim \mathrm{Beta}(u, v)
 \end{align*}
+This results in the following partition prior: 
+```math
+\begin{equation}
+\pi(\rho_n \mid r, p) &\propto K! p^{n-K}(1-p)^{rK}\Gamma(r)^{-K}\prod_{k=1}^K n_k \Gamma(n_k+r-1)
+\end{equation}
 ```
 where ``\rho_n`` is the partition and ``K`` is the number of clusters in the partition. The partition likelihood is given by
 ```math

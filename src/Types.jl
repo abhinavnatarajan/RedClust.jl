@@ -103,6 +103,7 @@ Struct containing MCMC samples.
 - `K_iac`, `r_iac`, and `p_iac`: integrated autocorrelation coefficient for `K`, `r`, and `p` respectively. 
 - `K_ess::Float64`, `r_ess::Float64`, and `p_ess::Float64`: effective sample size for `K`, `r`, and `p` respectively.
 - `loglik::Vector{Float64}`: log-likelihood for each sample. 
+- `logposterior::Vector{Float64}`: a function proportional to the log-posterior for each sample, with constant of proportionality equal to the normalising constant of the partition prior PMF.
 - `splitmerge_splits`: Boolean vector indicating the iterations when a split proposal was used in the split-merge step. Has length `numMH * numiters` (see [`MCMCOptionsList`](@ref)).
 - `splitmerge_acceptance_rate`: acceptance rate of the split-merge proposals. 
 - `r_acceptances`: Boolean vector indicating the iterations (including burnin and the thinned out iterations) where the Metropolis-Hastings proposal for `r` was accepted. 
@@ -139,6 +140,7 @@ Base.@kwdef mutable struct MCMCResult
     runtime::Float64
     mean_iter_time::Float64
     loglik::Vector{Float64}
+    logposterior::Vector{Float64}
     options::MCMCOptionsList
     params::PriorHyperparamsList
     pntestimate::Vector{Int}
@@ -159,6 +161,7 @@ Base.@kwdef mutable struct MCMCResult
         x.p = zeros(numsamples)
         x.p_acf = zeros(numsamples)
         x.loglik = zeros(numsamples)
+        x.logposterior = zeros(numsamples)
         x.splitmerge_acceptances = Vector{Bool}(undef, numiters * numMH)
         x.splitmerge_splits = Vector{Bool}(undef, numiters * numMH)
         x.r_acceptances = Vector{Bool}(undef, numiters)

@@ -6,77 +6,78 @@ using LinearAlgebra: I
 using Clustering: kmedoids, varinfo
 using ProgressBars: ProgressBar
 using RCall: rcopy, @R_str
-
-
-
 function loglik(
     data::MCMCData, 
     state::MCMCState,
-    params::PriorHyperparamsList,
-    clustering::Bool,
-    partition::Bool
-    )::Float64
+    params::PriorHyperparamsList)::Float64
     D = data.D
     logD = data.logD
     clusts = state.clusts
     clustsizes = state.clustsizes
     K = state.K
-    r = state.r
-    p = state.p
     δ1 = params.δ1
     δ2 = params.δ2
     α = params.α
     β = params.β
     ζ = params.ζ
     γ = params.γ
+    repulsion = params.repulsion
+
+	C = findall(clustsizes .> 0)
+	L::Float64 = 0
+	
+	# Cohesive part of likelihood 
+    for k = 1:K
+        clust_k = clusts .== C[k]
+        sz_k = clustsizes[C[k]]
+        pairs_k = numpairs(sz_k)
+        a = α + δ1 * pairs_k
+        b = β + sum(D[clust_k, clust_k]) / 2 
+        L += (δ1 - 1) * sum(logD[clust_k, clust_k]) / 2 - pairs_k * loggamma(δ1) +
+            α * log(β) - loggamma(α) +
+            loggamma(a)  - a * log(b)
+    end
+    
+    # Repulsive part of likelihood
+    if repulsion
+        for k = 1:K
+            clust_k = clusts .== C[k]
+            sz_k = clustsizes[C[k]]
+            for t = (k + 1):K
+                clust_t = clusts .== C[t]
+                sz_t = clustsizes[C[t]]	
+                pairs_kt = sz_k * sz_t
+                z = ζ + δ2 * pairs_kt
+                g = γ + sum(D[clust_k, clust_t])
+                L += (δ2 - 1) * sum(logD[clust_k, clust_t]) - pairs_kt * loggamma(δ2) +
+                    ζ * log(γ) - loggamma(ζ) +
+                    loggamma(z) - z * log(g)
+            end
+        end
+    end
+	return L
+end
+
+function logprior(state::MCMCState,
+    params::PriorHyperparamsList
+    )::Float64
+    clustsizes = state.clustsizes
+    K = state.K
+    r = state.r
+    p = state.p
     η = params.η
     σ = params.σ
     u = params.u
     v = params.v
-    repulsion = params.repulsion
-
 	C = findall(clustsizes .> 0)
-    n = size(D, 1)
-	L = 0
-	
-	if clustering 
-		# Cohesive part of likelihood 
-		for k = 1:K
-			clust_k = clusts .== C[k]
-			sz_k = clustsizes[C[k]]
-			pairs_k = numpairs(sz_k)
-			a = α + δ1 * pairs_k
-			b = β + sum(D[clust_k, clust_k]) / 2 
-			L += (δ1 - 1) * sum(logD[clust_k, clust_k]) / 2 - pairs_k * loggamma(δ1) +
-				α * log(β) - loggamma(α) +
-				loggamma(a)  - a * log(b)
-        end
-		
-		# Repulsive part of likelihood
-		if repulsion
-			for k = 1:K
-				clust_k = clusts .== C[k]
-				sz_k = clustsizes[C[k]]
-				for t = (k + 1):K
-					clust_t = clusts .== C[t]
-					sz_t = clustsizes[C[t]]	
-					pairs_kt = sz_k * sz_t
-					z = ζ + δ2 * pairs_kt
-					g = γ + sum(D[clust_k, clust_t])
-					L += (δ2 - 1) * sum(logD[clust_k, clust_t]) - pairs_kt * loggamma(δ2) +
-						ζ * log(γ) - loggamma(ζ) +
-						loggamma(z) - z * log(g)
-                end
-            end
-        end
+    n = length(state.clusts)
+
+	# prior on partition
+    L = loggamma(K + 1) + (n - K) * log(p) + (r * K) * log(1 - p) - K * loggamma(r) 
+    for nj in clustsizes[C]
+        L += log(nj) + loggamma(nj + r - 1)
     end
-	
-	if partition
-        L += loggamma(K + 1) + (n - K) * log(p) + (r * K) * log(1 - p) - K * loggamma(r)
-        for nj in clustsizes[C]
-            L += log(nj) + loggamma(nj + r - 1)
-        end
-    end
+    L += logpdf(Gamma(η, 1/σ), r) + logpdf(Beta(u, v), p) # prior on r and p
 	return L
 end
 
@@ -258,7 +259,7 @@ function sample_labels_Gibbs!(
 			ci_new = candidate_clusts[k]
         else 
 			ci_new = final_clusts[i]
-			k = findall(candidate_clusts .== ci_new)[1]
+			k = findfirst(candidate_clusts .== ci_new)
 		end
 		
 		clusts[i] = ci_new
@@ -380,8 +381,8 @@ function sample_labels!(
         
         # likelihood ratio for MH acceptance ratio
         log_lik_ratio = loglik(data,
-            finalstate, params, true, false) - 
-            loglik(data, state, params, true, false)
+            finalstate, params) - 
+            loglik(data, state, params)
         
         # MH acceptance step
         log_acceptance_ratio = minimum(
@@ -458,7 +459,8 @@ function runsampler(data::MCMCData,
             result.K[j] = state.K
             result.r[j] = state.r
             result.p[j] = state.p
-            result.loglik[j] = loglik(data, state, params, true, true)
+            result.loglik[j] = loglik(data, state, params)
+            result.logposterior[j] = result.loglik[j] + logprior(state, params)
             j = j + 1
         end
     end

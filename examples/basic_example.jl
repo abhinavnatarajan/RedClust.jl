@@ -1,7 +1,7 @@
 using RedClust
 using Random: seed!
-using CairoMakie
 using StatsBase: counts
+using CairoMakie
 
 # Generate data 
 seed!(44)
@@ -25,7 +25,7 @@ fig2
 params = fitprior(pnts, "k-means", false).params
 
 # MCMC options
-options = MCMCOptionsList(usesalso = true)
+options = MCMCOptionsList()
 data = MCMCData(D = distM)
 
 # Run the sampler
@@ -60,3 +60,14 @@ hist!(ax, result.p, bins = 25)
 p_hist
 # Summary of MCMC and point estimate
 summarise(result, clusts);
+
+# Log-likelihood
+loglik_plot = Figure(fontsize = 20)
+ax = Axis(loglik_plot[1, 1])
+lines!(ax, result.loglik)
+loglik_plot
+# Log-posterior
+logposterior_plot = Figure(fontsize = 20)
+ax = Axis(logposterior_plot[1, 1])
+lines!(ax, result.logposterior)
+logposterior_plot
