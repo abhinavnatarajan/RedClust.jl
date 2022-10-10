@@ -46,6 +46,12 @@ function fitprior(
 	end
 	N = size(x, 2)
 
+	if !diss 
+		print("Input: $N observations.\n")
+	else
+		print("Input: pairwise dissimilarities of $N observations.\n")
+	end
+
 	# Input validation
 	if diss && size(x, 1) != size(x, 2)
 		throw(ArgumentError("Supplied dissimilarity matrix is not square."))
@@ -55,6 +61,14 @@ function fitprior(
 	end
 	if algo != "k-means" && algo != "k-medoids"
 		throw(ArgumentError("Algo must be 'k-means' or 'k-medoids'."))
+	end
+	if Kmin < 1
+		@warn ("Kmin must be positive, setting Kmin = 1.")
+		Kmin = 1
+	end
+	if Kmax > N
+		@warn "Kmax is larger than the number of points (did you accidentally tranpose the input?). Setting Kmax = number of points."
+		Kmax = N
 	end
 
 	if !diss
@@ -96,7 +110,7 @@ function fitprior(
 	end
 
 	if !useR
-		for k =1:(Kmax-Kmin+1)
+		for k in ProgressBar(1:(Kmax-Kmin+1))
 			temp = clustfn(input, k; maxiter=1000)
 			objective[k] = temp.totalcost
 			# if !temp.converged

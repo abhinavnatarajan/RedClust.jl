@@ -12,7 +12,7 @@ The package can be installed by typing `]add RedClust` into the Julia REPL or by
 using Pkg
 Pkg.add("RedClust")
 ```
-RedClust also requires [`R`](https://www.r-project.org/) and the R package [`salso`](https://CRAN.R-project.org/package=salso). If R is already installed, make sure the `R_HOME` environment variable is set to the R home directory (you could run `R.home()` in R to determine the location of this directory). If R or salso are not found, they are automatically installed during package installation.   
+RedClust also requires [`R`](https://www.r-project.org/) and the R package [`salso`](https://CRAN.R-project.org/package=salso). If R is already installed, make sure the `R_HOME` environment variable is set to the R home directory (you could run `R.home()` in R to determine the location of this directory). If R or `salso` are not found, they are automatically installed during package installation.  
 
 ## Basic example
 ```julia
@@ -62,7 +62,7 @@ where ``\boldsymbol D`` is the matrix of pairwise dissimilarities between observ
 ## Point estimation
 A clustering point-estimate ``\boldsymbol c^*`` can be determined by searching for a clustering that minimises the expectation of the Variation of Information distance (Wade and Ghahramani, 2018) from a clustering ``\boldsymbol c'`` chosen randomly from the posterior distribution. That is, 
 ```math
-\boldsymbol c^* = \argmin_{\boldsymbol c} \mathbb{E}_{\boldsymbol c'}[d_{VI}(\boldsymbol c, \boldsymbol c')]
+\boldsymbol c^* = \argmin_{\boldsymbol c} \mathbb{E}_{\boldsymbol c'}[d_{mathrm{VI}}(\boldsymbol c, \boldsymbol c')]
 ```
 1. A naive method is to restrict the search space to those clusterings visited by the MCMC sampler. 
 2. A better method is the SALSO algorithm (Dahl et al., 2022), implemented in the [R](https://www.r-project.org/) package [salso](https://CRAN.R-project.org/package=salso). 
@@ -73,7 +73,7 @@ If you want to use this package in your work, please cite it as:
 
 Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2022. ‘Cohesion and Repulsion in Bayesian Distance Clustering’, arXiv [2107.05414](https://arxiv.org/abs/2107.05414).
 
-## References
+## Bibliography
 Betancourt, B., Zanella, G. and Steorts, R. C. (2022), ‘Random partition models for microclustering
 tasks’, _Journal of the American Statistical Association_ 117(539), 1215–1227. DOI: [10.1080/01621459.2020.1841647](https://doi.org/10.1080/01621459.2020.1841647).
 
