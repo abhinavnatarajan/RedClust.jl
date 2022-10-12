@@ -9,7 +9,7 @@ const _numMH_default = 1
 List of options for running the MCMC. 
 
 Constructor:
-    MCMCOptionsList(; [numiters, burnin, thin, numGibbs, numMH, pointestimation, usesalso])
+    MCMCOptionsList(; [numiters, burnin, thin, numGibbs, numMH])
 
 # Constructor arguments
 - `numiters::Integer = 5000`: number of iterations to run.
@@ -17,8 +17,6 @@ Constructor:
 - `thin::Integer = 1`: will keep every `thin` samples.
 - `numGibbs:Integer = 1`: number of intermediate Gibbs scans in the split-merge step.
 - `numMH:Integer = 1`: number of split-merge steps per MCMC iteration.
-- `pointestimation::Bool = true`: whether to compute a point-estimate clustering from the posterior samples.
-- `usesalso::Bool = false`: whether to use the SALSO algorithm to compute a point estimate.
 """
 Base.@kwdef struct MCMCOptionsList
     numiters::Int = 5000
@@ -26,8 +24,6 @@ Base.@kwdef struct MCMCOptionsList
     thin::Int = 1
     numGibbs::Int = _numGibbs_default
     numMH::Int = _numMH_default
-    pointestimation::Bool = true
-    usesalso::Bool = false 
     numsamples::Int = Int(floor((numiters - burnin) / thin))
 end
 
@@ -92,7 +88,6 @@ Struct containing MCMC samples.
 - `options::MCMCOptionsList`: options passed to the sampler. 
 - `params::PriorHyperparamsList`: prior hyperparameters used by the sampler. 
 - `clusts::Vector{ClustLabelVector}`: contains the clustering allocations. `clusts[i]` is a vector containing the clustering allocation from the `i`th sample. 
-- `pntestimate::ClustLabelVector`: contains the point-estimate clustering allocation. If `options.pointestimation == false` then this is a vector of zeros. 
 - `posterior_coclustering::Matrix{Float64}`: the posterior coclustering matrix. 
 - `K::Vector{Int}`: posterior samples of ``K``, i.e., the number of clusters. `K[i]` is the number of clusters in `clusts[i]`.
 - `r::Vector{Float64}`: posterior samples of the parameter ``r``.
@@ -103,7 +98,7 @@ Struct containing MCMC samples.
 - `K_iac`, `r_iac`, and `p_iac`: integrated autocorrelation coefficient for `K`, `r`, and `p` respectively. 
 - `K_ess::Float64`, `r_ess::Float64`, and `p_ess::Float64`: effective sample size for `K`, `r`, and `p` respectively.
 - `loglik::Vector{Float64}`: log-likelihood for each sample. 
-- `logposterior::Vector{Float64}`: a function proportional to the log-posterior for each sample, with constant of proportionality equal to the normalising constant of the partition prior PMF.
+- `logposterior::Vector{Float64}`: a function proportional to the log-posterior for each sample, with constant of proportionality equal to the normalising constant of the partition prior.
 - `splitmerge_splits`: Boolean vector indicating the iterations when a split proposal was used in the split-merge step. Has length `numMH * numiters` (see [`MCMCOptionsList`](@ref)).
 - `splitmerge_acceptance_rate`: acceptance rate of the split-merge proposals. 
 - `r_acceptances`: Boolean vector indicating the iterations (including burnin and the thinned out iterations) where the Metropolis-Hastings proposal for `r` was accepted. 
@@ -143,7 +138,6 @@ Base.@kwdef mutable struct MCMCResult
     logposterior::Vector{Float64}
     options::MCMCOptionsList
     params::PriorHyperparamsList
-    pntestimate::Vector{Int}
     function MCMCResult(data::MCMCData, options::MCMCOptionsList, params::PriorHyperparamsList)
         x = new()
         numpts = size(data.D, 1)
@@ -165,7 +159,6 @@ Base.@kwdef mutable struct MCMCResult
         x.splitmerge_acceptances = Vector{Bool}(undef, numiters * numMH)
         x.splitmerge_splits = Vector{Bool}(undef, numiters * numMH)
         x.r_acceptances = Vector{Bool}(undef, numiters)
-        x.pntestimate = zeros(Int, numpts)
         return x
     end
 end

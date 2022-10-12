@@ -6,7 +6,7 @@ DocMeta.setdocmeta!(RedClust, :DocTestSetup, :(using RedClust); recursive=true)
 makedocs(;
     modules=[RedClust],
     authors="Abhinav Natarajan <abhinav.v.natarajan@gmail.com>",
-    repo="https://github.com/abhinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/ab      hinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
     sitename="RedClust.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
@@ -15,28 +15,30 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-    "Introduction" => "introduction.md",
+    "Introduction" => "index.md",
     "Reference" => "reference.md",
     "Changelog" => "changelog.md"
     ]
 )
 
-# makedocs(; # for local builds
-#     modules=[RedClust],
-#     authors="Abhinav Natarajan <abhinav.v.natarajan@gmail.com>",
-#     repo="https://github.com/abhinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
-#     sitename="RedClust.jl",
-#     format=Documenter.HTML(;
-#         prettyurls="false",
-#         canonical="https://abhinavnatarajan.github.io/RedClust.jl",
-#         edit_link="main",
-#         assets=String[],
-#     ),
-#     pages=[
-#     "Introduction" => "index.md",
-#     "Reference" => "reference.md"
-#     ]
-# )
+# For local builds
+makedocs(;
+    modules=[RedClust],
+    authors="Abhinav Natarajan <abhinav.v.natarajan@gmail.com>",
+    repo="https://github.com/abhinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
+    sitename="RedClust.jl",
+    format=Documenter.HTML(;
+        prettyurls=false,
+        canonical="https://abhinavnatarajan.github.io/RedClust.jl",
+        edit_link="main",
+        assets=String[],
+    ),
+    pages=[
+    "Introduction" => "index.md",
+    "Reference" => "reference.md",
+    "Changelog" => "changelog.md"
+    ]
+)
 
 deploydocs(;
     repo="github.com/abhinavnatarajan/RedClust.jl",

@@ -6,6 +6,7 @@ using LinearAlgebra: I
 using Clustering: kmedoids, varinfo
 using ProgressBars: ProgressBar
 using RCall: rcopy, @R_str
+
 function loglik(
     data::MCMCData, 
     state::MCMCState,
@@ -27,10 +28,11 @@ function loglik(
 	L::Float64 = 0
 	
 	# Cohesive part of likelihood 
-    for k = 1:K
+    @inbounds @simd for k = 1:K
+    # for k = 1:K
         clust_k = clusts .== C[k]
         sz_k = clustsizes[C[k]]
-        pairs_k = numpairs(sz_k)
+        pairs_k = binomial(sz_k, 2)
         a = α + δ1 * pairs_k
         b = β + sum(D[clust_k, clust_k]) / 2 
         L += (δ1 - 1) * sum(logD[clust_k, clust_k]) / 2 - pairs_k * loggamma(δ1) +
@@ -40,10 +42,11 @@ function loglik(
     
     # Repulsive part of likelihood
     if repulsion
-        for k = 1:K
+        @inbounds for k = 1:K
+        # for k = 1:K
             clust_k = clusts .== C[k]
             sz_k = clustsizes[C[k]]
-            for t = (k + 1):K
+            @simd for t = (k + 1):K
                 clust_t = clusts .== C[t]
                 sz_t = clustsizes[C[t]]	
                 pairs_kt = sz_k * sz_t
@@ -73,11 +76,10 @@ function logprior(state::MCMCState,
     n = length(state.clusts)
 
 	# prior on partition
-    L = loggamma(K + 1) + (n - K) * log(p) + (r * K) * log(1 - p) - K * loggamma(r) 
-    for nj in clustsizes[C]
+    L = loggamma(K + 1) + (n - K) * log(p) + (r * K) * log(1 - p) - K * loggamma(r) + logpdf(Gamma(η, 1/σ), r) + logpdf(Beta(u, v), p)
+    @inbounds @simd for nj in clustsizes[C]
         L += log(nj) + loggamma(nj + r - 1)
     end
-    L += logpdf(Gamma(η, 1/σ), r) + logpdf(Beta(u, v), p) # prior on r and p
 	return L
 end
 
@@ -195,22 +197,22 @@ function sample_labels_Gibbs!(
     L2_ik_prime = zeros(n)
     αβratio = α * log(β) - loggamma(α)
     ζγratio = ζ * log(γ) - loggamma(ζ)
-	for i in items_to_reallocate
+	@inbounds for i in items_to_reallocate
 		clustsizes[clusts[i]] = clustsizes[clusts[i]] - 1
 		clusts[i] = -1
 		C_i = findall(clustsizes .> 0)
 		K_i = length(C_i)
 
-		candidate_clusts = C_i
+		# candidate_clusts = C_i
         if free_label_set && (maxK == 0 || K_i < maxK) && K_i < n
-			candidate_clusts = append!(candidate_clusts, findall(clustsizes .== 0)[1])
+			candidate_clusts = [C_i; findfirst(clustsizes .== 0)]
         end
 		m = length(candidate_clusts)
 		
 		# Calculate everything that we will need
 		
-		for k in C_i
-			clust_k = (clusts .== k)
+		@simd for k in C_i
+			clust_k = clusts .== k
 			sz_clust_k = clustsizes[k]
 			α_i[k] = α + δ1 * sz_clust_k
 			β_i[k] = β + sum(D[i, clust_k])
@@ -236,24 +238,16 @@ function sample_labels_Gibbs!(
                 log_prior_ratio[k] = log(sz_candidate_clust_k + 1) + log(p) + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
             end
 		end
-		
 		logprobs .= log_prior_ratio .+ L1
-		
-		if repulsion
-            for t in C_i 
-                L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
-                ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[t] * loggamma(δ2)
-            end
-            L2_i = sum(L2_ik_prime[C_i])
-            for k = 1:m
-                if clustsizes[candidate_clusts[k]] == 0
-                    L2[k] = L2_i
-                else
-                    L2[k] = L2_i - L2_ik_prime[candidate_clusts[k]]
-                end
-            end
-			logprobs .+= L2
-		end 
+        for t in C_i 
+            L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
+            ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[t] * loggamma(δ2)
+        end
+        L2_i = sum(L2_ik_prime[C_i])
+        for k = 1:m
+            L2[k] = L2_i - ifelse(clustsizes[candidate_clusts[k]] == 0, 0, L2_ik_prime[candidate_clusts[k]])
+        end
+        repulsion ? logprobs .+= L2 : nothing
 		if free_allocation 
 			k = sample_logweights(logprobs)
 			ci_new = candidate_clusts[k]
@@ -291,7 +285,8 @@ function sample_labels!(
 
 	accept = fill(false, numMH)
     split = fill(false, numMH)
-    for MH_counter in 1:numMH
+    @inbounds for MH_counter in 1:numMH
+    # for MH_counter in 1:numMH
         clusts = state.clusts
         clustsizes = state.clustsizes
         K = state.K
@@ -401,7 +396,10 @@ function sample_labels!(
 end
 
 """
-    runsampler(data[, options, params])
+    runsampler(data, 
+    options = MCMCOptionsList(), 
+    params = PriorHyperparamsList(); 
+    verbose = true)
 
 Runs the MCMC sampler on the data.
 
@@ -409,6 +407,7 @@ Runs the MCMC sampler on the data.
 - `data::MCMCData`: contains the distance matrix. 
 - `options = MCMCOptionsList()`: contains the number of iterations, burnin, etc. 
 - `params = PriorHyperparamsList()`: contains the prior hyperparameters for the model.
+- `verbose::Bool = true`: if false, disables all info messages and progress bars. 
 
 # Returns
 A struct of type `MCMCResult` containing the MCMC samples, convergence diagnostics, and summary statistics.
@@ -419,8 +418,14 @@ A struct of type `MCMCResult` containing the MCMC samples, convergence diagnosti
 function runsampler(data::MCMCData, 
     options::MCMCOptionsList = MCMCOptionsList(), 
     params::Union{PriorHyperparamsList, Nothing} = nothing,
-    init::Union{MCMCState, Nothing} = nothing
+    init::Union{MCMCState, Nothing} = nothing;
+    verbose = true
     )::MCMCResult
+    if !verbose 
+		ostream = devnull
+	else
+		ostream = stdout
+	end	
     numiters = options.numiters
     burnin = options.burnin
     thin = options.thin
@@ -442,10 +447,10 @@ function runsampler(data::MCMCData,
 
     # Start sampling
     j::Int = 1
-    print("Start sampling...\n")
+    println(ostream, "MCMC setup: $numiters iterations, $numsamples samples, $(size(data.D, 1)) observations.")
     runtime = 0
     runtime = @elapsed (
-    for i in ProgressBar(1:numiters)
+    for i in ProgressBar(1:numiters, output_stream = ostream)
         result.r_acceptances[i] = sample_r!(state, params).accept
         sample_p!(state, params)
         temp = sample_labels!(data, state, params, options)
@@ -466,15 +471,9 @@ function runsampler(data::MCMCData,
     end
     )
 
-    print("Computing summary statistics and diagnostics...\n")
+    println(ostream, "Computing summary statistics and diagnostics.")
     # Create co-clustering matrix and compute its IAC
     result.posterior_coclustering = sum(adjacencymatrix.(result.clusts)) ./ numsamples
-
-    # Get point estimate
-    if options.pointestimation
-        result.pntestimate = pointestimate(result.clusts; loss = "VI", usesalso = options.usesalso)
-    end
-
 
     # Compute normalised autocorrelation and integrated autocorrelation coefficient of the samples
     # For K
@@ -502,14 +501,21 @@ function runsampler(data::MCMCData,
     result.params = params
     result.runtime = runtime
     result.mean_iter_time = runtime / numiters
+
     return result
 end
 
 function sample_rp(
     clustsizes::Vector{Int},
     options::MCMCOptionsList = MCMCOptionsList(),
-    params::PriorHyperparamsList = PriorHyperparamsList()
+    params::PriorHyperparamsList = PriorHyperparamsList();
+    verbose = true
     ) 
+    if !verbose 
+		ostream = devnull
+	else
+		ostream = stdout
+	end	
     # Unpack parameters
     numiters = options.numiters
     burnin = options.burnin
@@ -529,7 +535,7 @@ function sample_rp(
 	numsamples = Integer(floor((numiters - burnin) / thin))
 	result = (r = zeros(numsamples), p = zeros(numsamples))
 	j = 1
-	for i in ProgressBar(1:numiters)
+	for i in ProgressBar(1:numiters, output_stream = ostream)
 		# Sample r
 		r = sample_r(r, p, C, K, η, σ, proposalsd_r).r
 		# Sample p

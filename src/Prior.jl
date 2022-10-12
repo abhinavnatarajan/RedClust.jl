@@ -1,12 +1,14 @@
-using Distributions: fit_mle, Gamma, shape, rate, Distributions
 using Clustering: kmeans, kmedoids
 using Distances: pairwise, Euclidean
-using StatsBase: counts, std
+using Distributions: fit_mle, Gamma, shape, rate, Distributions
 using ProgressBars: ProgressBar
 using RCall: rcopy, @R_str
+using StatsBase: counts, std
+
 
 """
-    fitprior(data, algo; diss = false, Kmin = 1, Kmax = Int(floor(size(data)[end] / 2), useR = true)
+    fitprior(data, algo; diss = false, Kmin = 1, 
+	Kmax = Int(floor(size(data)[end] / 2), useR = true)
 
 Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
 
@@ -17,6 +19,7 @@ Determines the best prior hyperparameters from the data. A notional clustering i
 - `Kmin::Integer`: minimum number of clusters.
 - `Kmax::Integer = Int(floor(size(data)[end] / 2))`: maximum number of clusters. If left unspecified, it is set to half the number of observations.
 - `useR::Bool = false`: if `false`, will use the `kmeans` or `kmedoids` from the Julia package [`Clustering.jl`](https://juliastats.org/Clustering.jl/stable/). If `true`, will use `kmeans` or `cluster::pam` in R. 
+- `verbose::Bool = true`: if false, disables all info messages and progress bars. 
 
 # Returns
 A named tuple containing the following
@@ -33,8 +36,15 @@ function fitprior(
 	diss::Bool = false; 
 	Kmin = 1, 
 	Kmax = Int(floor(size(data)[end] / 2)),
-	useR = false 
+	useR = false, 
+	verbose = true 
 )
+	if !verbose 
+		ostream = devnull
+	else
+		ostream = stdout
+	end
+
 	if data isa Vector{Vector{Float64}}
 		if diss
 			@warn "diss = true but data is not a dissimilarity matrix. Assuming that the data is a vector of observations."
@@ -47,9 +57,9 @@ function fitprior(
 	N = size(x, 2)
 
 	if !diss 
-		print("Input: $N observations.\n")
+		println(ostream, "Fitting prior hyperparameters on $N raw observations of dimension $(size(x, 1)).")
 	else
-		print("Input: pairwise dissimilarities of $N observations.\n")
+		println(ostream, "Fitting prior hyperparameters on pairwise dissimilarities.")
 	end
 
 	# Input validation
@@ -79,7 +89,7 @@ function fitprior(
 	
 
 	# Get notional clustering
-	print("Computing notional clustering.\n")
+	println(ostream, "Computing notional clustering.")
 	objective = Vector{Float64}(undef, Kmax - Kmin + 1)
 	if algo == "k-means"
 		if useR
@@ -110,9 +120,9 @@ function fitprior(
 	end
 
 	if !useR
-		for k in ProgressBar(1:(Kmax-Kmin+1))
+		for k in ProgressBar(1:(Kmax-Kmin+1), output_stream = ostream)
 			temp = clustfn(input, k; maxiter=1000)
-			objective[k] = temp.totalcost
+			@inbounds objective[k] = temp.totalcost
 			# if !temp.converged
 			# 	@warn "Clustering did not converge at K = $k"
 			# end
@@ -143,7 +153,7 @@ function fitprior(
 	B = uppertriangle(dissM)[uppertriangle(notionaladjmatrix) .== 0]
 
 	# Compute likelihood parameters
-	print("Computing likelihood hyperparameters.\n")
+	println(ostream, "Computing likelihood hyperparameters.")
 	fitA = fit_mle(Gamma, A)
 	fitB = fit_mle(Gamma, B)
 	δ1 = shape(fitA)
@@ -154,9 +164,9 @@ function fitprior(
 	γ = sum(B)
 
 	# Compute partition prior parameters
-	print("Computing partition prior hyperparameters.\n")
+	println(ostream, "Computing partition prior hyperparameters.")
 	clustsizes = counts(notionalclustering)
-	temp = sample_rp(clustsizes)
+	temp = sample_rp(clustsizes; verbose = verbose)
 	proposalsd_r = std(temp.r)
 	fitr = fit_mle(Gamma, temp.r)
 	η = shape(fitr)
@@ -178,6 +188,7 @@ function fitprior(
 		v = v,
 		K_initial = K
 	)
+
 	@NamedTuple{
 		params, K, notionalclustering, 
 		objective}(

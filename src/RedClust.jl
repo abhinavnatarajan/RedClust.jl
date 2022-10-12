@@ -1,16 +1,40 @@
 module RedClust
 
-include("./Types.jl")
-include("./Utility.jl")
-include("./Prior.jl")
-include("./MCMC.jl")
+export 
+# fit prior
+fitprior, 
+# MCMC sampler
+runsampler,
+
+# utility functions
+adjacencymatrix, 
+sortlabels, 
+uppertriangle, 
+generatemixture, 
+makematrix, 
+
+# summary functions
+evaluateclustering, 
+summarise,
+
+# point estimate
+getpointestimate,
+binderloss,
+infodist, 
+
+# types
+MCMCOptionsList, 
+PriorHyperparamsList, 
+MCMCData, 
+MCMCResult
+
+include("./types.jl")
+include("./utils.jl")
+include("./prior.jl")
+include("./mcmc.jl")
+include("./pointestimate.jl")
 # include("./Plot.jl")
-include("./SummaryFunctions.jl")
+include("./summaries.jl")
 
-
-export fitprior, runsampler, # main functions
-adjacencymatrix, sortlabels, uppertriangle, generatemixture, makematrix, pointestimate, # convenience
-evaluateclustering, summarise, # summary functions 
-MCMCOptionsList, PriorHyperparamsList, MCMCData, MCMCResult # types
 
 end

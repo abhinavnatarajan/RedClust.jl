@@ -30,6 +30,11 @@ data = MCMCData(D = distM)
 
 # Run the sampler
 result = runsampler(data, options, params)
+pointestimate, _ = getpointestimate(result)
+
+# Summary of MCMC and point estimate
+summarise(result)
+summarise(pointestimate, clusts);
 
 # Check the results
 # Posterior coclustering matrix
@@ -40,7 +45,7 @@ fig3
 # Point-estimate adjacency matrix
 fig4 = Figure()
 Axis(fig4[1, 1], aspect = 1)
-heatmap!(adjacencymatrix(result.pntestimate), colormap = :Blues)
+heatmap!(adjacencymatrix(pointestimate), colormap = :Blues)
 fig4
 
 # Posterior distribution of K
@@ -58,8 +63,7 @@ p_hist = Figure(resolution = (400, 300), fontsize = 20)
 ax = Axis(p_hist[1, 1])
 hist!(ax, result.p, bins = 25)
 p_hist
-# Summary of MCMC and point estimate
-summarise(result, clusts);
+
 
 # Log-likelihood
 loglik_plot = Figure(fontsize = 20)

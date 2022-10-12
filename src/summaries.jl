@@ -1,52 +1,55 @@
 using Clustering: randindex, varinfo, vmeasure, mutualinfo
 
-"""
+@doc raw"""
     evaluateclustering(clusts::ClustLabelVector, truth::ClustLabelVector)
 Returns a tuple of values quantifying the accuracy of the clustering assignments in `clusts` with respect to the ground truth clustering assignments in `truth`. 
 # Return values
-- `bloss`: Normalised Binder loss (= 1 - rand index). Lower is better. 
+- `nbloss`: Normalised Binder loss (= 1 - rand index). Lower is better. 
 - `ari`: Adjusted Rand index. Higher is better. 
-- `vidist`: Variation of Information distances. Lower is better. 
+- `vi`: Variation of Information distances. Lower is better. Range is ``[0, \log N]``.
+- `nvi`: Normalised VI distance with range ``[0, 1]``.
+- `id`: Information Distance. Lower is better. Range is ``[0, \log N]``.
+- `nid`: Normalised Information Distance with range ``[0, 1]``.
 - `vmeas`: V-Measure. Higher is better. 
 - `nmi`: Normalised Mutual Information. Higher is better. 
 """
 function evaluateclustering(clusts::ClustLabelVector, truth::ClustLabelVector)
-    bloss = binderloss(clusts, truth)
-    ari = randindex(clusts, truth)[1]
-    vidist = varinfo(clusts, truth)
+    length(clusts) != length(truth) && throw(ArgumentError("Length of inputs must be equal."))
+    n = length(clusts)
+    ari, _, nbloss, _ = randindex(clusts, truth)
+    vi = varinfo(clusts, truth)
+    nvi = vi / log(n)
+    id = infodist(clusts, truth; normalised = false)
+    nid = id / log(n)
     vmeas = vmeasure(clusts, truth)
     nmi = mutualinfo(clusts, truth)
-    return (bloss, ari = ari, vidist = vidist, vmeas = vmeas, nmi = nmi)
+    return (nbloss = nbloss, ari = ari, vi = vi, nvi, id = id, nid = nid, vmeas = vmeas, nmi = nmi)
 end
 
-function evaluateclustering(result::MCMCResult, truth::ClustLabelVector)
-    reftruth = Ref(truth)
-    bloss = binderloss.(result.clusts, reftruth)
-    ari = (x -> randindex(x, truth)).(result.clusts, reftruth)
-    vidist = varinfo.(result.clusts, reftruth)
-    vmeas = vmeasure.(result.clusts, reftruth)
-    nmi = mutualinfo.(result.clusts, reftruth)
-    return (bloss, ari = ari, vidist = vidist, vmeas = vmeas, nmi = nmi)
-end
-
-function summarise(clusts::ClustLabelVector, truth::ClustLabelVector)::String
+"""
+    summarise(clusts::ClustLabelVector, truth::ClustLabelVector, printoutput = true)
+Returns a string that summarises the clustering accuracy of `clusts` with respect to the ground truth in `truth`. If `printoutput = true`, the output will be printed to console before being returned. 
+"""
+function summarise(clusts::ClustLabelVector, truth::ClustLabelVector, printoutput=true)::String
     output = ""
     temp = evaluateclustering(clusts, truth)
     output *= "Clustering summary\n"
     output *= "Number of clusters : $(length(unique(clusts)))\n"
-    output *= "Normalised Binder loss : $(temp.bloss)\n"
-    output *= "Variation of Information distance : $(temp.vidist)\n"
+    output *= "Normalised Binder loss : $(temp.nbloss)\n"
     output *= "Adjusted Rand Index : $(temp.ari)\n"
+    output *= "Normalised Variation of Information (NVI) distance : $(temp.nvi)\n"
+    output *= "Normalised Information Distance (NID) : $(temp.nid)\n"
     output *= "Normalised Mutual Information : $(temp.nmi)\n"
     output *= "V-Measure : $(temp.vmeas)\n"
+    if printoutput print(output) end
     return output
 end
 
 """
-    summarise(result::MCMCResult, truth::ClustLabelVector = [], printoutput = true)
-Returns a string that summarises the MCMC output. If `truth` is a vector of cluster labels, the output also contains clustering metrics to quantify the accuracy of the point-estimate from the MCMC with respect to `truth`. If `printoutput = true`, the output will be printed to console before being returned. 
+    summarise(result::MCMCResult, printoutput = true)
+Returns a string that summarises the MCMC output. If `printoutput = true`, the output will be printed to console before being returned. 
 """
-function summarise(result::MCMCResult, truth::ClustLabelVector=[], printoutput=true)::String
+function summarise(result::MCMCResult, printoutput=true)::String
     output = ""
     output *= "General Summary\n"
     output *= "Iterations : $(result.options.numiters)\n"
@@ -80,30 +83,6 @@ function summarise(result::MCMCResult, truth::ClustLabelVector=[], printoutput=t
     output *= "ESS per sample : $(result.p_ess / result.options.numsamples)\n"
     output *= "Posterior mean : $(result.p_mean)\n"
     output *= "Posterior variance : $(result.p_variance)\n"
-    if length(truth) > 0
-        temp = evaluateclustering(result.pntestimate, truth)
-        output *= "\n"
-        output *= "Clustering summary\n"
-        output *= "Number of clusters : $(length(unique(result.pntestimate)))\n"
-        output *= "Normalised Binder loss : $(temp.bloss)\n"
-        output *= "Variation of Information distance : $(temp.vidist)\n"
-        output *= "Adjusted Rand Index : $(temp.ari)\n"
-        output *= "Normalised Mutual Information : $(temp.nmi)\n"
-        output *= "V-Measure : $(temp.vmeas)\n"
-    end
     if printoutput print(output) end
     return output
-end
-
-function binderloss(
-    a::ClustLabelVector,
-    b::ClustLabelVector,
-    normalised = true
-    )::Float64
-    loss = sum(abs.(adjacencymatrix(a) .- adjacencymatrix(b)))
-    if normalised 
-        n = length(a)
-        loss /= n * (n - 1)
-    end
-    return loss
 end

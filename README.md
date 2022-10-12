@@ -31,6 +31,8 @@ options = MCMCOptionsList(numiters = 5000)
 data = MCMCData(D = distM)
 # Run the sampler
 result = runsampler(data, options, params)
+# Get a point estimate 
+pointestimate, _ = getpointestimate(result)
 ```
 
 ## Citing this package

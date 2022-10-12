@@ -1,18 +1,13 @@
-using StatsBase: autocor, wsample, levelsmap
 using Distributions: Dirichlet, MvNormal, pdf
 using LinearAlgebra: I
 using Random: rand
-using Match
 using RCall: @R_str, rcopy
-
-function numpairs(n::Int)::Int
-    Integer(n * (n - 1) / 2)
-end
+using StatsBase: autocor, wsample, levelsmap, mean
 
 function sample_logweights(logprobs::Vector{Float64})::Int
-	logprobs = logprobs .- minimum(logprobs)
+	logprobs .-= minimum(logprobs)
     u = rand(Uniform(), length(logprobs))
-    argmax(-log.(-log.(u)) + logprobs)
+    argmax(-log.(-log.(u)) .+ logprobs)
 end
 
 # Compute the integrated autocorrelation coefficient
@@ -23,6 +18,13 @@ function iac_ess_acf(x::AbstractVector{<:Real})
     return (iac = iac, ess = ess, acf = acf)
 end
 
+function uppertriangle(
+    M::Matrix{T}
+    )::Vector{T} where {T}
+	n = size(M, 1)
+	[M[i, j] for i in 1:n for j in (i + 1):n]
+end
+
 """
     adjacencymatrix(clusts::ClustLabelVector)
 Returns the `n`x`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`. 
@@ -31,13 +33,6 @@ function adjacencymatrix(
     clusts::ClustLabelVector
     )::Matrix{Bool}
 	clusts .== clusts'
-end
-
-function uppertriangle(
-    M::Matrix{T}
-    )::Vector{T} where {T}
-	n = size(M, 1)
-	[M[i, j] for i in 1:n for j in (i + 1):n]
 end
 
 """
@@ -74,7 +69,15 @@ Named tuple containing the following fields-
 - `probs::Float64`: vector of `K` cluster weights generated from the Dirichlet prior, used to generate the observations.
 - `oracle_coclustering::Matrix{Float64}`: `N`x`N` matrix of co-clustering probabilities, calculated assuming full knowledge of the cluster centres and cluster weights.
 """
-function generatemixture(N, K; α = K, dim = K, radius = 1, σ = 0.1) 
+function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, radius::Real = 1, σ::Real = 0.1)
+    # input validation 
+    N < 1 && throw(ArgumentError("N must be greater than 1."))
+    (K < 1 || K > N) && throw(ArgumentError("K must satisfy 1 ≤ K ≤ N."))
+    α ≤ 0 && throw(ArgumentError("α must be positive."))
+    dim < K && throw(ArgumentError("dim must be ≥ K."))
+    radius ≤ 0 && throw(ArgumentError("radius must be positive."))
+    σ ≤ 0 && throw(ArgumentError("σ must be positive."))
+
     probs = rand(Dirichlet(K, α))
     clusts = sort(wsample(1:K, probs, N))
 
@@ -115,41 +118,3 @@ end
 function makematrix(x::Vector{Vector{T}})::Matrix where {T}
     [x[i][j] for j in 1:length(x[1]), i in 1:length(x)]
 end
-
-"""
-    pointestimate(clusts::Vector{ClustLabelVector}; loss = "VI", usesalso = false)
-Computes a point estimate from a vector of samples of cluster allocations by searching for a minimiser of the posterior expectation of some loss function. 
-
-# Arguments 
-- `loss::String`: must be either `"VI"` or `"binder"`. Determines the loss function as either the Variation of Information distance or Binder loss. 
-`usesalso::Bool`: if true, the SALSO algorithm is used. If false, the search space is restricted to the list of samples passed to the function.
-"""
-function pointestimate(clusts::Vector{ClustLabelVector}; loss = "VI", usesalso = false)
-    if usesalso
-        clustsM = makematrix(clusts)'
-        pntestimate = rcopy(R"""
-        library(salso)
-        salso(x = $clustsM, loss = $loss)
-        """)
-    else
-        pntestimate = zeros(Int, length(clusts[1]))
-        lossfn = @match loss begin
-            "VI"        => varinfo
-            "binder"    => (x, y) -> binderloss(x, y, false)
-        end
-        npts = length(clusts[1])
-        minscore = Inf
-        for clust in clusts
-            temp = mean(lossfn.(clusts, Ref(clust)))
-            if temp  < minscore
-                minscore = temp
-                pntestimate .= clust
-            end
-        end
-    end
-    return pntestimate
-end
-
-
-
-
