@@ -13,8 +13,8 @@ using StatsBase: autocor, wsample, levelsmap, mean
 end
 
 # Fast versions of vector and matrix sums
-@inline function matsum(x::AbstractMatrix, inds1::AbstractVector{Int}, inds2::AbstractVector{Int})
-    ans = zero(eltype(x))
+@inline function matsum(x::AbstractMatrix{Float64}, inds1::AbstractVector{Int}, inds2::AbstractVector{Int})
+    ans = 0.0
     @turbo for i in eachindex(inds1)
         for j in eachindex(inds2)
             ans += x[inds1[i], inds2[j]]
@@ -22,22 +22,22 @@ end
     end
     ans
 end
-@inline function matsum(x::AbstractMatrix)
-    ans = zero(eltype(x))
+@inline function matsum(x::AbstractMatrix{Float64})
+    ans = 0.0
     @turbo for i in eachindex(x)
         ans += x[i]
     end
     ans
 end
-@inline function vecsum(x::AbstractVector, inds::AbstractVector{Int})
-    ans = zero(eltype(x))
+@inline function vecsum(x::AbstractVector{Float64}, inds::AbstractVector{Int})
+    ans = 0.0
     @turbo for i in eachindex(inds)
         ans += x[inds[i]]
     end
     ans
 end
-@inline function vecsum(x::AbstractVector)
-    ans = zero(eltype(x))
+@inline function vecsum(x::AbstractVector{Float64})
+    ans = 0.0
     @turbo for i in eachindex(x)
         ans += x[i]
     end

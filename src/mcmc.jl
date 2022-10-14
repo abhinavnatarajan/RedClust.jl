@@ -341,7 +341,7 @@ function sample_labels_Gibbs_restricted!(
             L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
             ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[C[t]] * loggammaδ2
         end
-        L2_i = vecsum(L2_ik_prime)
+        L2_i = L2_ik_prime[1] + L2_ik_prime[2] 
         for k = 1:2
             L2[k] = L2_i - L2_ik_prime[candidate_clust_inds[k]]
         end
@@ -622,7 +622,7 @@ function sample_rp(
     u = params.u
     v = params.v
     C = clustsizes[findall(clustsizes .> 0)]
-    n = vecsum(C)
+    n = sum(C)
     K = length(C)
 	
 	# Initialise result
