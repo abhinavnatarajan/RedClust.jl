@@ -23,7 +23,7 @@ If `method` is either `"MAP"`, `"MLE"`, or `"MPEL"`, returns a tuple `(clust, i)
 function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Union{String, Function} = "VI")
     # input validation
     if method == "SALSO" || method == "MPEL"
-        if loss ∉ ["binder", "omARI", "VI", "NVI", "ID", "NID"]
+        if loss ∉ ["binder", "omARI", "VI", "ID"]
             throw(ArgumentError("Invalid loss function specifier."))
         end
     end
