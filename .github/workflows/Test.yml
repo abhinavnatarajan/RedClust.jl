@@ -29,3 +29,11 @@ jobs:
         uses: julia-actions/julia-runtest@v1
         with:
           annotate: true
+      - name: Process code coverage and upload
+        uses: julia-actions/julia-processcoverage@v1
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: lcov.info
+  
+        
