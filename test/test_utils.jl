@@ -33,8 +33,8 @@ end
     v = rand(500)
     inds1 = sample(1:500, 200)
     inds2 = sample(1:500, 150)
-    @test sum(x) ≈ matsum(x)
-    @test sum(x[inds1, inds2]) ≈ matsum(x, inds1, inds2)
-    @test sum(v) ≈ vecsum(v)
-    @test sum(v[inds1]) ≈ vecsum(v, inds1)
+    @test sum(x) ≈ RedClust.matsum(x)
+    @test sum(x[inds1, inds2]) ≈ RedClust.matsum(x, inds1, inds2)
+    @test sum(v) ≈ RedClust.vecsum(v)
+    @test sum(v[inds1]) ≈ RedClust.vecsum(v, inds1)
 end

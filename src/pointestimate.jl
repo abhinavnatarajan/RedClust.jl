@@ -21,6 +21,16 @@ Computes a point estimate from a vector of samples of cluster allocations by sea
 If `method` is either `"MAP"`, `"MLE"`, or `"MPEL"`, returns a tuple `(clust, i)` where `clust` is a clustering in `samples` and `i` is its sample index. If `method` is `"SALSO"`, returns a vector of cluster labels. 
 """
 function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Union{String, Function} = "VI")
+    # input validation
+    if method == "SALSO" || method == "MPEL"
+        if loss ∉ ["binder", "omARI", "VI", "NVI", "ID", "NID"]
+            throw(ArgumentError("Invalid loss function specifier."))
+        end
+    end
+    if method ∉ ["MAP", "MLE", "MPEL", "SALSO"]
+        throw(ArgumentError("Invalid method specifier."))
+    end
+
     if method == "MAP" # maximum a posteriori
         i = argmax(samples.logposterior)
         return (samples.clusts[i], i)
@@ -34,22 +44,19 @@ function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Unio
         if typeof(loss) == Function
             lossfn = loss
         else typeof(loss) == String
-            if loss ∉ ["binder", "omARI", "VI", "NVI", "ID", "NID"]
-                throw(ArgumentError("Invalid loss function specified."))
-            else
-                lossfn = @match loss begin
-                    "binder" => (x::ClustLabelVector, y::ClustLabelVector) -> randindex(x, y)[3]
-                    "omARI" => (x::ClustLabelVector, y::ClustLabelVector) -> 1 - randindex(x, y)[1]
-                    "VI" => varinfo
-                    "ID" => (x::ClustLabelVector, y::ClustLabelVector) -> infodist(x, y; normalised = false)
-                end
+            lossfn = @match loss begin
+                "binder" => (x::ClustLabelVector, y::ClustLabelVector) -> randindex(x, y)[3]
+                "omARI" => (x::ClustLabelVector, y::ClustLabelVector) -> 1 - randindex(x, y)[1]
+                "VI" => varinfo
+                "ID" => (x::ClustLabelVector, y::ClustLabelVector) -> infodist(x, y; normalised = false)
             end
         end
         clusts = samples.clusts
-        lossmatrix = Matrix(undef, length(clusts), length(clusts))
-        inds = [(i, j) for i in 1:length(clusts) for j in (i+1):length(clusts)]
-        @turbo for i in 1:length(inds)
-            lossmatrix[inds[i]] = lossfn(clusts[inds[i][1]], clusts[inds[i][2]])
+        lossmatrix = zeros(length(clusts), length(clusts))
+        for i in eachindex(clusts)
+            for j in (i+1):length(clusts)
+                lossmatrix[i, j] = lossfn(clusts[i], clusts[j]) 
+            end
         end
         lossmatrix += transpose(lossmatrix)
         i = argmin(vec(sum(lossmatrix, dims = 1)))
@@ -62,7 +69,6 @@ function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Unio
         salso(x = $clustsM, loss = $loss)
         """)
     end
-    throw(ArgumentError("Invalid method."))
 end
 
 """
