@@ -1,6 +1,6 @@
 # RedClust
 *A Julia package for Bayesian clustering of high-dimensional data using pairwise dissimilarities and repulsion.*
-![GitHub Workflow Status (master)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI?label=CI&logo=github)
+[![GitHub Workflow Status (master)][github-CI-img]][github-CI-url]
 [![License][license-img]][license-url]
 [![Latest release][release-img]][release-url]
 [![Code Coverage][codecov-img]][codecov-url]
@@ -49,8 +49,8 @@ Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2022. ‘Coh
 [github-CI-img]: https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI?label=CI&logo=github
 [github-CI-url]: https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/CI.yml
 
-[codecov-img]: https://codecov.io/gh/JuliaDocs/Documenter.jl/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/JuliaDocs/Documenter.jl
+[codecov-img]: https://img.shields.io/codecov/c/github/abhinavnatarajan/RedClust.jl?logo=codecov
+[codecov-url]: https://app.codecov.io/gh/abhinavnatarajan/RedClust.jl/
 
 [release-img]: https://img.shields.io/github/v/release/abhinavnatarajan/RedClust.jl?display_name=tag&logo=SemVer&sort=semver
 [release-url]: https://github.com/abhinavnatarajan/RedClust.jl/releases
