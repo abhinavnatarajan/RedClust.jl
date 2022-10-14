@@ -24,4 +24,5 @@ docs/site/
 Manifest.toml
 
 ssh_keys
-/docs/localmake.jl
+docs/localmake.jl
+src/Plot.jl

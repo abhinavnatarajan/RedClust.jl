@@ -1,13 +1,13 @@
 # RedClust
+*A Julia package for Bayesian clustering of high-dimensional data using pairwise dissimilarities and repulsion.*
+![GitHub Workflow Status (master)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI?label=CI&logo=github)
+[![License][license-img]][license-url]
+[![Latest release][release-img]][release-url]
+[![Code Coverage][codecov-img]][codecov-url]
 
-![GitHub Workflow Status (master)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/Run%20tests/master?style=flat&logo=github)
-[![License](https://img.shields.io/github/license/abhinavnatarajan/RedClust.jl?style=flat)](https://github.com/abhinavnatarajan/RedClust.jl/blob/master/LICENSE)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/abhinavnatarajan/RedClust.jl?style=flat) ](https://github.com/abhinavnatarajan/RedClust.jl/releases)
-
-![GitHub Documentation Status (latest)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/Documentation?label=Documentation)
-[![Stable](https://img.shields.io/badge/docs-stable-blue?style=flat)](https://abhinavnatarajan.github.io/RedClust.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue?style=flat)](https://abhinavnatarajan.github.io/RedClust.jl/dev/)
-[![arXiv](https://img.shields.io/badge/arxiv-2107.05414-red)](https://arxiv.org/abs/2107.05414)
+[![Development version documentation][docs-stable-img]][docs-stable-url]
+[![Stable version documentation][docs-stable-img]][docs-stable-url]
+[![arxiv paper link][arxiv-img]][arxiv-url]
 
 ## Introduction
 
@@ -45,3 +45,24 @@ summarise(pointestimate, clusts)
 If you want to use this package in your work, please cite it as:
 
 Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2022. ‘Cohesion and Repulsion in Bayesian Distance Clustering’, arXiv [2107.05414](https://arxiv.org/abs/2107.05414).
+
+[github-CI-img]: https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI?label=CI&logo=github
+[github-CI-url]: https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/CI.yml
+
+[codecov-img]: https://codecov.io/gh/JuliaDocs/Documenter.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaDocs/Documenter.jl
+
+[release-img]: https://img.shields.io/github/v/release/abhinavnatarajan/RedClust.jl?display_name=tag&logo=SemVer&sort=semver
+[release-url]: https://github.com/abhinavnatarajan/RedClust.jl/releases
+
+[license-img]: https://img.shields.io/github/license/abhinavnatarajan/RedClust.jl?style=flat
+[license-url]: https://github.com/abhinavnatarajan/RedClust.jl/blob/master/LICENSE
+
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue?style=flat
+[docs-dev-url]: https://abhinavnatarajan.github.io/RedClust.jl/dev/
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue?style=flat
+[docs-stable-url]: https://abhinavnatarajan.github.io/RedClust.jl/stable/
+
+[arxiv-img]: https://img.shields.io/badge/arxiv-2107.05414-red
+[arxiv-url]: https://arxiv.org/abs/2107.05414
