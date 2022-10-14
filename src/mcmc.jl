@@ -320,7 +320,7 @@ function sample_labels_Gibbs_restricted!(
             clust_k = findall(clusts .== candidate_clusts[k])
 			sz_clust_k = clustsizes[candidate_clusts[k]]
 			α_i[k] = α + δ1 * sz_clust_k
-			@inline β_i[k] = β + matsum(D, [i], clust_k)
+			β_i[k] = β + matsum(D, [i], clust_k)
         end
         @simd for k in 1:K
 			clust_k = findall(clusts .== C[k])
