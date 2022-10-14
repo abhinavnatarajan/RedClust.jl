@@ -27,3 +27,14 @@ end
     temp = sample(1:K, n)
     @test n^2 == sum(adjacencymatrix(temp) .== adjacencymatrix(sortlabels(temp)))
 end
+
+@testset "matsum and vecsum" begin
+    x = rand(500, 500)
+    v = rand(500)
+    inds1 = sample(1:500, 200)
+    inds2 = sample(1:500, 150)
+    @test sum(x) ≈ matsum(x)
+    @test sum(x[inds1, inds2]) ≈ matsum(x, inds1, inds2)
+    @test sum(v) ≈ vecsum(v)
+    @test sum(v[inds1]) ≈ vecsum(v, inds1)
+end
