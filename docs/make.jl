@@ -1,12 +1,11 @@
-using RedClust
-using Documenter
+using RedClust, Documenter
 
 DocMeta.setdocmeta!(RedClust, :DocTestSetup, :(using RedClust); recursive=true)
 
 makedocs(;
     modules=[RedClust],
     authors="Abhinav Natarajan <abhinav.v.natarajan@gmail.com>",
-    repo="https://github.com/ab      hinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/abhinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
     sitename="RedClust.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",

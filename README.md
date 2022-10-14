@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/abhinavnatarajan/RedClust.jl?style=flat)](https://github.com/abhinavnatarajan/RedClust.jl/blob/master/LICENSE)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/abhinavnatarajan/RedClust.jl?style=flat) ](https://github.com/abhinavnatarajan/RedClust.jl/releases)
 
-![GitHub Documentation Status (latest)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/Documentation/master?style=flat&logo=github)
+![GitHub Documentation Status (latest)](https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/Documentation?label=Documentation)
 [![Stable](https://img.shields.io/badge/docs-stable-blue?style=flat)](https://abhinavnatarajan.github.io/RedClust.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue?style=flat)](https://abhinavnatarajan.github.io/RedClust.jl/dev/)
 [![arXiv](https://img.shields.io/badge/arxiv-2107.05414-red)](https://arxiv.org/abs/2107.05414)
