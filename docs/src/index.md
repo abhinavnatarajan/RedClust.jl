@@ -18,17 +18,20 @@ RedClust also requires [`R`](https://www.r-project.org/) and the R package [`sal
 ```julia
 using RedClust
 # Generate data
-pnts, distM, clusts, probs, oracle_coclustering = 
+points, distM, clusts, probs, oracle_coclustering = 
 	generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim)
 # Let RedClust choose the best prior hyperparameters
-params = fitprior(pnts, "k-means", false).params
+params = fitprior(pnts, "k-means", false)
 # Set the MCMC options
 options = MCMCOptionsList(numiters = 5000)
-data = MCMCData(D = distM)
+data = MCMCData(points)
 # Run the sampler
 result = runsampler(data, options, params)
 # Get a point estimate 
-pointestimate, _ = getpointestimate(result)
+pointestimate, index = getpointestimate(result)
+# Summary of MCMC and point estimate
+summarise(result)
+summarise(pointestimate, clusts)
 ```
 
 ## Model

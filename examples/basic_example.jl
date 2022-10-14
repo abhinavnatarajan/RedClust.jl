@@ -9,9 +9,9 @@ K = 10 # Number of clusters
 N = 100 # Number of points
 data_σ = 0.25 # Variance of the normal kernel
 data_dim = 10 # Data dimension
-data = generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim)
-pnts, distM, clusts, probs, oracle_coclustering = data
-# See the true adjacency matrix and oracle co-clustering matrices
+data = generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim);
+points, distmatrix, clusts, probs, oracle_coclustering = data;
+# Plot the true adjacency matrix and oracle co-clustering matrices as heatmaps
 fig1 = Figure()
 Axis(fig1[1, 1], aspect = 1)
 heatmap!(adjacencymatrix(clusts), colormap = :Blues)
@@ -22,19 +22,19 @@ heatmap!(oracle_coclustering, colormap = :Blues)
 fig2
 
 # Determine the best the prior hyperparameters
-params = fitprior(pnts, "k-means", false).params
+params = fitprior(points, "k-means", false)
 
 # MCMC options
-options = MCMCOptionsList()
-data = MCMCData(D = distM)
+options = MCMCOptionsList(numiters=5000)
+data = MCMCData(points)
 
 # Run the sampler
 result = runsampler(data, options, params)
-pointestimate, _ = getpointestimate(result)
+pointestimate, index = getpointestimate(result; loss = "binder", method="MPEL")
 
 # Summary of MCMC and point estimate
 summarise(result)
-summarise(pointestimate, clusts);
+summarise(pointestimate, clusts)
 
 # Check the results
 # Posterior coclustering matrix

@@ -1,13 +1,47 @@
 using Distributions: Dirichlet, MvNormal, pdf
 using LinearAlgebra: I
+using LoopVectorization: @turbo
 using Random: rand
 using RCall: @R_str, rcopy
 using StatsBase: autocor, wsample, levelsmap, mean
 
-function sample_logweights(logprobs::Vector{Float64})::Int
+# use the Gumbel-max trick to sample from a vector of discrete log-probabilities
+@inline function sample_logweights(logprobs::AbstractVector{Float64})::Int
 	logprobs .-= minimum(logprobs)
     u = rand(Uniform(), length(logprobs))
     argmax(-log.(-log.(u)) .+ logprobs)
+end
+
+# Fast versions of vector and matrix sums
+@inline function matsum(x::AbstractMatrix, inds1::AbstractVector{Int}, inds2::AbstractVector{Int})
+    ans = zero(eltype(x))
+    @turbo for i in eachindex(inds1)
+        for j in eachindex(inds2)
+            ans += x[inds1[i], inds2[j]]
+        end
+    end
+    ans
+end
+@inline function matsum(x::AbstractMatrix)
+    ans = zero(eltype(x))
+    @turbo for i in eachindex(x)
+        ans += x[i]
+    end
+    ans
+end
+@inline function vecsum(x::AbstractVector, inds::AbstractVector{Int})
+    ans = zero(eltype(x))
+    @turbo for i in eachindex(inds)
+        ans += x[inds[i]]
+    end
+    ans
+end
+@inline function vecsum(x::AbstractVector)
+    ans = zero(eltype(x))
+    @turbo for i in eachindex(x)
+        ans += x[i]
+    end
+    ans
 end
 
 # Compute the integrated autocorrelation coefficient
@@ -26,8 +60,8 @@ function uppertriangle(
 end
 
 """
-    adjacencymatrix(clusts::ClustLabelVector)
-Returns the `n`x`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`. 
+    adjacencymatrix(clusts::ClustLabelVector) -> Matrix{Bool}
+Returns the `n`×`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`. 
 """ 
 function adjacencymatrix(
     clusts::ClustLabelVector
@@ -36,7 +70,7 @@ function adjacencymatrix(
 end
 
 """
-    sortlabels(x::ClustLabelVector)
+    sortlabels(x::ClustLabelVector) -> ClustLabelVector
 Returns a cluster label vector `y` such that `x` and `y` have the same adjacency structure and labels in `y` occur in sorted ascending order.
 """
 function sortlabels(
@@ -63,11 +97,11 @@ Generates a multivariate Normal mixture, with kernel weights generated from a Di
 
 Named tuple containing the following fields-
 
-- `pnts::Vector{Vector{Float64}}`: a vector of `N` observations.
-- `distM::Matrix{Float64}`: an `N`x`N` matrix of pairwise Euclidean distances between the observations.
+- `points::Vector{Vector{Float64}}`: a vector of `N` observations.
+- `distancematrix::Matrix{Float64}`: an `N`×`N` matrix of pairwise Euclidean distances between the observations.
 - `clusts::ClustLabelVector`: vector of `N` cluster assignments.
 - `probs::Float64`: vector of `K` cluster weights generated from the Dirichlet prior, used to generate the observations.
-- `oracle_coclustering::Matrix{Float64}`: `N`x`N` matrix of co-clustering probabilities, calculated assuming full knowledge of the cluster centres and cluster weights.
+- `oracle_coclustering::Matrix{Float64}`: `N`×`N` matrix of co-clustering probabilities, calculated assuming full knowledge of the cluster centres and cluster weights.
 """
 function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, radius::Real = 1, σ::Real = 0.1)
     # input validation 
@@ -111,10 +145,14 @@ function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, ra
     oracle_coclustering ./= numiters #oracle coclustering matrix
 	distM = [pnts[i][j] for i in 1:N, j in 1:dim]' |> 
     (x -> pairwise(Euclidean(), x, dims = 2))
-    return (pnts = pnts, distM = distM, clusts = clusts, probs = probs, oracle_coclustering = oracle_coclustering)
+    return (points = pnts, distancematrix = distM, clusts = clusts, probs = probs, oracle_coclustering = oracle_coclustering)
 end
 
-"Convert a vector of vectors into a matrix, where each vector becomes a column in the matrix."
-function makematrix(x::Vector{Vector{T}})::Matrix where {T}
+"""
+    makematrix(x::AbstractVector{<:AbstractVector}) -> Matrix
+
+Convert a vector of vectors into a matrix, where each vector becomes a column in the matrix.
+"""
+function makematrix(x::AbstractVector{<:AbstractVector})::Matrix
     [x[i][j] for j in 1:length(x[1]), i in 1:length(x)]
 end

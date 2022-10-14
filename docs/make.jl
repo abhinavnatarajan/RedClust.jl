@@ -21,25 +21,6 @@ makedocs(;
     ]
 )
 
-# For local builds
-makedocs(;
-    modules=[RedClust],
-    authors="Abhinav Natarajan <abhinav.v.natarajan@gmail.com>",
-    repo="https://github.com/abhinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
-    sitename="RedClust.jl",
-    format=Documenter.HTML(;
-        prettyurls=false,
-        canonical="https://abhinavnatarajan.github.io/RedClust.jl",
-        edit_link="main",
-        assets=String[],
-    ),
-    pages=[
-    "Introduction" => "index.md",
-    "Reference" => "reference.md",
-    "Changelog" => "changelog.md"
-    ]
-)
-
 deploydocs(;
     repo="github.com/abhinavnatarajan/RedClust.jl",
     devbranch="master"

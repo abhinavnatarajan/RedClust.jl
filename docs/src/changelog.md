@@ -1,4 +1,4 @@
-# CHANGELOG
+# Changelog
 
 ## [Unreleased]
 
@@ -6,33 +6,34 @@
 - added log-posterior to result.
 - added log-likelihood and log-posterior plots to basic example.
 - point-estimation via maximum likelihood and maximum a posteriori.
-- information distance between clusterings.
-- add verbose option for [`runsampler`] and [`fitprior`].
+- [`infodist`](@ref) function to compute the information distance between clusterings.
+- convenience constructor for [`MCMCData`](@ref).
+- add verbose option for [`runsampler`](@ref) and [`fitprior`](@ref).
+- pretty printing for [`MCMCData`](@ref), [`MCMCOptionsList`](@ref), and [`PriorHyperparamsList`](@ref).
 - added bibliographic references to documentation.
 - added changelog.
 
 ### Breaking
-- pointestimate changed to `getpointestimate` with different signature.
-- MCMCOptions constructor changed account for change in point-estimate calculation.  
+- MCMCOptions constructor changed account for change in point-estimate calculation. 
+- [`fitprior`] now only returns the hyperparameter list.
+- removed `summarise` for `MCMCResult` objects (use pretty printing instead).
 
 ### Fixed
 - corrected computation of log-likelihood in result.
+- fixed edge case error in [`fitprior`](@ref) when the found value of `K` is either 1 or `N`. This case arises only for edge values of `Kmin` and `Kmax`, since the elbow method will otherwise not choose 1 or `N` for `K`.
 
 ### Changed
 - added bounds checking for `Kmin` and `Kmax` in [`fitprior`](@ref).
 - added input message for better debugging in [`fitprior`](@ref).
 - added progress bar for [`fitprior`](@ref) if `useR = false`. 
 - added input validation for [`generatemixture`](@ref).
-- added input validation for `binderloss` and `evaluateclustering`.
+- added input validation for [`binderloss`](@ref) and [`evaluateclustering`](@ref).
+- added input validation for the constructors of [`MCMCData`](@ref) and [`MCMCOptionsList`](@ref).
 - separated computation of log-likelihood and log-prior.
 - removed redundant loss function calculations when computing point-estimate.
 - Binder loss calculation (`binderloss`) is now approximate (using randindex from Clustering.jl) but faster.
 - [`runsampler`](@ref) no longer automatically calculates a point estimate. 
 - [`summarise`](@ref) has a separate signature for MCMC output and for point estimate summary, and now provides more measures for point estimates.
-- minor optimisations using `@inbounds` and `@simd`.
-
-### To do
-
-- remove redundant log-likelihood calculations in MCMC sampler.
-- add options for using SALSO.
-- add code coverage calculation for tests.
+- minor optimisations using `@inbounds`, `@simd`, and `@turbo`.
+- using StaticArrays.jl and separate function for restricted Gibbs scan. 
+- speedup via non-generic implementation of matrix and vector sums with LoopVectorization.jl.

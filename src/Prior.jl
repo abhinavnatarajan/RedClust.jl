@@ -7,47 +7,40 @@ using StatsBase: counts, std
 
 
 """
-    fitprior(data, algo; diss = false, Kmin = 1, 
-	Kmax = Int(floor(size(data)[end] / 2), useR = true)
+    fitprior(data, algo, diss = false; 
+	Kmin = 1, 
+	Kmax = Int(floor(size(data)[end] / 2), 
+	useR = false, 
+	verbose = true)
 
 Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
 
 # Arguments
 - `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 
 - `algo::String`: must be one of `"k-means"` or `"k-medoids"`.
-- `diss::bool = false`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
+- `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
 - `Kmin::Integer`: minimum number of clusters.
-- `Kmax::Integer = Int(floor(size(data)[end] / 2))`: maximum number of clusters. If left unspecified, it is set to half the number of observations.
-- `useR::Bool = false`: if `false`, will use the `kmeans` or `kmedoids` from the Julia package [`Clustering.jl`](https://juliastats.org/Clustering.jl/stable/). If `true`, will use `kmeans` or `cluster::pam` in R. 
-- `verbose::Bool = true`: if false, disables all info messages and progress bars. 
+- `Kmax::Integer`: maximum number of clusters. If left unspecified, it is set to half the number of observations.
+- `useR::Bool`: if `false`, will use the `kmeans` or `kmedoids` from the Julia package [`Clustering.jl`](https://juliastats.org/Clustering.jl/stable/). If `true`, will use `kmeans` or `cluster::pam` in R. 
+- `verbose::Bool`: if false, disables all info messages and progress bars. 
 
 # Returns
-A named tuple containing the following
-- `params::PriorHyperparamsList`: the fitted hyperparameters.
-- `K::Integer`: the number of clusters in the notional clustering.
-- `notionalclustering::ClustLabelVector`: the cluster labels in the notional clustering.
-
-# See also
-[`PriorHyperparamsList`](@ref)
+An object of type [`PriorHyperparamsList`](@ref).
 """
 function fitprior(
 	data::Union{Vector{Vector{Float64}}, Matrix{Float64}},
 	algo::String, 
 	diss::Bool = false; 
-	Kmin = 1, 
-	Kmax = Int(floor(size(data)[end] / 2)),
-	useR = false, 
-	verbose = true 
+	Kmin::Integer = 1, 
+	Kmax::Integer = Int(floor(size(data)[end] / 2)),
+	useR::Bool = false, 
+	verbose::Bool = true 
 )
-	if !verbose 
-		ostream = devnull
-	else
-		ostream = stdout
-	end
-
+	ostream = verbose ? stdout : devnull
+	printstyled(ostream, "Fitting prior hyperparameters\n"; bold = true)
 	if data isa Vector{Vector{Float64}}
 		if diss
-			@warn "diss = true but data is not a dissimilarity matrix. Assuming that the data is a vector of observations."
+			throw(ArgumentError("diss = true but data is not a dissimilarity matrix. Assuming that the data is a vector of observations."))
 		end
 		x = makematrix(data)
 		diss = false
@@ -56,37 +49,15 @@ function fitprior(
 	end
 	N = size(x, 2)
 
-	if !diss 
-		println(ostream, "Fitting prior hyperparameters on $N raw observations of dimension $(size(x, 1)).")
-	else
-		println(ostream, "Fitting prior hyperparameters on pairwise dissimilarities.")
-	end
+	diss ? println(ostream, "Input: pairwise dissimilarities between $N observations.") :
+		println(ostream, "Input: $N observations of dimension $(size(x, 1)).")
 
 	# Input validation
-	if diss && size(x, 1) != size(x, 2)
-		throw(ArgumentError("Supplied dissimilarity matrix is not square."))
-	end
-	if algo == "k-means" && diss
-		throw(ArgumentError("Cannot use algorithm `k-means` with a dissimilarity matrix."))
-	end
-	if algo != "k-means" && algo != "k-medoids"
-		throw(ArgumentError("Algo must be 'k-means' or 'k-medoids'."))
-	end
-	if Kmin < 1
-		@warn ("Kmin must be positive, setting Kmin = 1.")
-		Kmin = 1
-	end
-	if Kmax > N
-		@warn "Kmax is larger than the number of points (did you accidentally tranpose the input?). Setting Kmax = number of points."
-		Kmax = N
-	end
-
-	if !diss
-		dissM = pairwise(Euclidean(), x, dims = 2)
-	else
-		dissM = x
-	end
-	
+	diss && size(x, 1) != size(x, 2) && throw(ArgumentError("Supplied dissimilarity matrix is not square."))
+	algo == "k-means" && diss && throw(ArgumentError("Cannot use algorithm `k-means` with a dissimilarity matrix."))
+	algo != "k-means" && algo != "k-medoids" && throw(ArgumentError("Algo must be 'k-means' or 'k-medoids'."))
+	!(1 ≤ Kmin && Kmin ≤ Kmax && Kmax ≤ N) && throw(ArgumentError("Kmin and Kmax must satisfy 1 ≤ Kmin ≤ Kmax ≤ N"))
+	dissM = diss ? x : pairwise(Euclidean(), x, dims = 2)
 
 	# Get notional clustering
 	println(ostream, "Computing notional clustering.")
@@ -120,12 +91,10 @@ function fitprior(
 	end
 
 	if !useR
-		for k in ProgressBar(1:(Kmax-Kmin+1), output_stream = ostream)
+		@inbounds for k in ProgressBar(1:(Kmax-Kmin+1), output_stream = ostream)
 			temp = clustfn(input, k; maxiter=1000)
-			@inbounds objective[k] = temp.totalcost
-			# if !temp.converged
-			# 	@warn "Clustering did not converge at K = $k"
-			# end
+			objective[k] = temp.totalcost
+			!temp.converged && @warn "Clustering did not converge at K = $k"
 		end
 	end
 	elbow = detectknee(Kmin:Kmax, objective)[1]
@@ -154,14 +123,28 @@ function fitprior(
 
 	# Compute likelihood parameters
 	println(ostream, "Computing likelihood hyperparameters.")
-	fitA = fit_mle(Gamma, A)
-	fitB = fit_mle(Gamma, B)
-	δ1 = shape(fitA)
-	α = length(A) * δ1
-	β = sum(A)
-	δ2 = shape(fitB) 
-	ζ = length(B) * δ2
-	γ = sum(B)
+	if K == N # A is empty
+		@warn "Got a notional clustering of entirely singletons. Falling back to defaults for cohesion parameters."
+		δ1 = 1
+		α = 1
+		β = 1
+	else
+		fitA = fit_mle(Gamma, A)
+		δ1 = shape(fitA)
+		α = length(A) * δ1
+		β = sum(A)
+	end
+	if K == 1
+		@warn "Got a notional clustering with a single cluster. Falling back to defaults for repulsion parameters."
+		δ2 = 1
+		ζ = 1
+		γ = 1
+	else
+		fitB = fit_mle(Gamma, B)
+		δ2 = shape(fitB) 
+		ζ = length(B) * δ2
+		γ = sum(B)
+	end
 
 	# Compute partition prior parameters
 	println(ostream, "Computing partition prior hyperparameters.")
@@ -188,12 +171,7 @@ function fitprior(
 		v = v,
 		K_initial = K
 	)
-
-	@NamedTuple{
-		params, K, notionalclustering, 
-		objective}(
-			(params, K, notionalclustering, objective)
-			)
+	return params
 end
 
 function detectknee(

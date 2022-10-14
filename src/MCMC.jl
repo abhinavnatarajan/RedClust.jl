@@ -1,10 +1,12 @@
-using Random: rand
-using StatsBase: sample, counts, mean_and_var, mean, var
-using Distributions: Normal, Uniform, Gamma, Beta, logpdf, truncated
-using SpecialFunctions: loggamma
-using LinearAlgebra: I
 using Clustering: kmedoids, varinfo
+using Distributions: Normal, Uniform, Gamma, Beta, logpdf, truncated
+using LinearAlgebra: I
+using LoopVectorization
 using ProgressBars: ProgressBar
+using SpecialFunctions: loggamma
+using StaticArrays
+using StatsBase: sample, counts, mean_and_var, mean, var
+using Random: rand
 using RCall: rcopy, @R_str
 
 function loglik(
@@ -23,41 +25,44 @@ function loglik(
     ζ = params.ζ
     γ = params.γ
     repulsion = params.repulsion
+    αβratio = α * log(β) - loggamma(α)
+    ζγratio = ζ * log(γ) - loggamma(ζ)
+    loggammaδ1 = loggamma(δ1)
+    loggammaδ2 = loggamma(δ2)
 
 	C = findall(clustsizes .> 0)
 	L::Float64 = 0
 	
 	# Cohesive part of likelihood 
-    @inbounds @simd for k = 1:K
+    @inbounds for k = 1:K
     # for k = 1:K
-        clust_k = clusts .== C[k]
+        clust_k = findall(clusts .== C[k])
         sz_k = clustsizes[C[k]]
         pairs_k = binomial(sz_k, 2)
         a = α + δ1 * pairs_k
-        b = β + sum(D[clust_k, clust_k]) / 2 
-        L += (δ1 - 1) * sum(logD[clust_k, clust_k]) / 2 - pairs_k * loggamma(δ1) +
-            α * log(β) - loggamma(α) +
+        b = β + matsum(D, clust_k, clust_k) / 2 
+        L += (δ1 - 1) * matsum(logD, clust_k, clust_k) / 2 - pairs_k * loggammaδ1 +
+            αβratio +
             loggamma(a)  - a * log(b)
     end
     
     # Repulsive part of likelihood
-    if repulsion
-        @inbounds for k = 1:K
-        # for k = 1:K
-            clust_k = clusts .== C[k]
-            sz_k = clustsizes[C[k]]
-            @simd for t = (k + 1):K
-                clust_t = clusts .== C[t]
-                sz_t = clustsizes[C[t]]	
-                pairs_kt = sz_k * sz_t
-                z = ζ + δ2 * pairs_kt
-                g = γ + sum(D[clust_k, clust_t])
-                L += (δ2 - 1) * sum(logD[clust_k, clust_t]) - pairs_kt * loggamma(δ2) +
-                    ζ * log(γ) - loggamma(ζ) +
-                    loggamma(z) - z * log(g)
-            end
+    L2 = 0
+    @inbounds for k = 1:K
+        clust_k = findall(clusts .== C[k])
+        sz_k = clustsizes[C[k]]
+        for t = (k + 1):K
+            clust_t = findall(clusts .== C[t])
+            sz_t = clustsizes[C[t]]	
+            pairs_kt = sz_k * sz_t
+            z = ζ + δ2 * pairs_kt
+            g = γ + matsum(D, clust_k, clust_t)
+            L2 += (δ2 - 1) * matsum(logD, clust_k, clust_t) - pairs_kt * loggammaδ2 +
+                ζγratio +
+                loggamma(z) - z * log(g)
         end
     end
+    L += L2 * repulsion
 	return L
 end
 
@@ -72,12 +77,12 @@ function logprior(state::MCMCState,
     σ = params.σ
     u = params.u
     v = params.v
-	C = findall(clustsizes .> 0)
+	@inbounds clustsizes = view(state.clustsizes, findall(state.clustsizes .> 0))
     n = length(state.clusts)
 
 	# prior on partition
     L = loggamma(K + 1) + (n - K) * log(p) + (r * K) * log(1 - p) - K * loggamma(r) + logpdf(Gamma(η, 1/σ), r) + logpdf(Beta(u, v), p)
-    @inbounds @simd for nj in clustsizes[C]
+    for nj in clustsizes
         L += log(nj) + loggamma(nj + r - 1)
     end
 	return L
@@ -164,10 +169,7 @@ end
 function sample_labels_Gibbs!(
     data::MCMCData,
     state::MCMCState,
-    params::PriorHyperparamsList,
-    items_to_reallocate::Vector{Int} = Vector(1:length(state.clusts)),
-    candidate_clusts::Vector{ClustLabelType} = ClustLabelType[],
-    final_clusts::ClustLabelVector = ClustLabelVector()
+    params::PriorHyperparamsList
     )
 
 	D = data.D
@@ -185,9 +187,6 @@ function sample_labels_Gibbs!(
     γ = params.γ
     repulsion = params.repulsion
     maxK = params.maxK
-	free_label_set = isempty(candidate_clusts) # free allocation of cluster labels is allowed
-	free_allocation = isempty(final_clusts) # force the result of the Gibbs scan (when we want to compute transition probability only)
-	log_transition_prob = 0 # transition probability of the Gibbs scan
 
 	α_i = zeros(n)
     β_i = zeros(n)
@@ -197,28 +196,32 @@ function sample_labels_Gibbs!(
     L2_ik_prime = zeros(n)
     αβratio = α * log(β) - loggamma(α)
     ζγratio = ζ * log(γ) - loggamma(ζ)
-	@inbounds for i in items_to_reallocate
+    loggammaδ1 = loggamma(δ1)
+    loggammaδ2 = loggamma(δ2)
+    logp = log(p)
+    log_oneminusp = log(1-p)
+	@inbounds for i in 1:n
 		clustsizes[clusts[i]] = clustsizes[clusts[i]] - 1
 		clusts[i] = -1
 		C_i = findall(clustsizes .> 0)
 		K_i = length(C_i)
 
-		# candidate_clusts = C_i
-        if free_label_set && (maxK == 0 || K_i < maxK) && K_i < n
-			candidate_clusts = [C_i; findfirst(clustsizes .== 0)]
+        if (maxK == 0 || K_i < maxK) && K_i < n
+			candidate_clusts = [C_i; [findfirst(clustsizes .== 0)]]
+        else
+            candidate_clusts = C_i
         end
 		m = length(candidate_clusts)
 		
 		# Calculate everything that we will need
-		
-		@simd for k in C_i
-			clust_k = clusts .== k
+		for k in C_i
+			clust_k = findall(clusts .== k)
 			sz_clust_k = clustsizes[k]
 			α_i[k] = α + δ1 * sz_clust_k
-			β_i[k] = β + sum(D[i, clust_k])
+			β_i[k] = β + matsum(D, [i], clust_k)
 			ζ_i[k] = ζ + δ2 * sz_clust_k
-			γ_i[k] = γ + sum(D[i, clust_k])
-			sum_logD_i[k] = sum(logD[i, clust_k])
+			γ_i[k] = γ + matsum(D, [i], clust_k)
+			sum_logD_i[k] = matsum(logD, [i], clust_k)
         end
 		
 		L1 = zeros(m)
@@ -226,28 +229,123 @@ function sample_labels_Gibbs!(
 		log_prior_ratio = zeros(m)
 		logprobs = zeros(m)
 		
-		for k in 1:m # compute cohesive likelihood component for each proposed cluster
-			if clustsizes[candidate_clusts[k]] == 0 # new cluster
-				log_prior_ratio[k] = log(K_i + 1) + r * log(1 - p)
-				L1[k] = 0
-			else 
-				sz_candidate_clust_k = clustsizes[candidate_clusts[k]]
-				L1[k] = loggamma(α_i[candidate_clusts[k]]) + αβratio - 
-                α_i[candidate_clusts[k]] * log(β_i[candidate_clusts[k]]) +
-					(δ1 - 1) * sum_logD_i[candidate_clusts[k]] - sz_candidate_clust_k * loggamma(δ1)
-                log_prior_ratio[k] = log(sz_candidate_clust_k + 1) + log(p) + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
-            end
+		for k in 1:(m-1) # compute cohesive likelihood component for each proposed cluster
+            sz_candidate_clust_k = clustsizes[candidate_clusts[k]]
+            L1[k] = loggamma(α_i[candidate_clusts[k]]) + αβratio - 
+            α_i[candidate_clusts[k]] * log(β_i[candidate_clusts[k]]) +
+                (δ1 - 1) * sum_logD_i[candidate_clusts[k]] - sz_candidate_clust_k * loggammaδ1
+            log_prior_ratio[k] = log(sz_candidate_clust_k + 1) + logp + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
 		end
-		logprobs .= log_prior_ratio .+ L1
+        if clustsizes[candidate_clusts[m]] == 0 # new cluster
+            log_prior_ratio[m] = log(K_i + 1) + r * log_oneminusp
+            L1[m] = 0
+        else
+            sz_candidate_clust_k = clustsizes[candidate_clusts[m]]
+            L1[m] = loggamma(α_i[candidate_clusts[m]]) + αβratio - 
+            α_i[candidate_clusts[m]] * log(β_i[candidate_clusts[m]]) +
+                (δ1 - 1) * sum_logD_i[candidate_clusts[m]] - sz_candidate_clust_k * loggammaδ1
+            log_prior_ratio[m] = log(sz_candidate_clust_k + 1) + logp + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
+        end
+
+		@. logprobs = log_prior_ratio + L1
         for t in C_i 
             L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
-            ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[t] * loggamma(δ2)
+            ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[t] * loggammaδ2
         end
-        L2_i = sum(L2_ik_prime[C_i])
+        L2_i = vecsum(L2_ik_prime, C_i)
         for k = 1:m
-            L2[k] = L2_i - ifelse(clustsizes[candidate_clusts[k]] == 0, 0, L2_ik_prime[candidate_clusts[k]])
+            L2[k] = L2_i - (clustsizes[candidate_clusts[k]] != 0) * L2_ik_prime[candidate_clusts[k]]
         end
-        repulsion ? logprobs .+= L2 : nothing
+        @. logprobs += L2 * repulsion
+
+        k = sample_logweights(logprobs)
+        ci_new = candidate_clusts[k]
+		clusts[i] = ci_new
+		clustsizes[ci_new] = clustsizes[ci_new] + 1
+    end
+    state.K = sum(clustsizes .> 0)
+    return nothing
+end
+
+## Sample clustering allocation labels via Gibbs sampling
+function sample_labels_Gibbs_restricted!(
+    data::MCMCData,
+    state::MCMCState,
+    params::PriorHyperparamsList,
+    items_to_reallocate::Vector{Int},
+    candidate_clusts::SVector{2, ClustLabelType}, # vector of length 2
+    final_clusts::ClustLabelVector = ClustLabelVector()
+    )
+
+	D = data.D
+    logD = data.logD
+    clusts = state.clusts
+    clustsizes = state.clustsizes
+    K = state.K
+    C = findall(clustsizes .> 0)
+    candidate_clust_inds = indexin(candidate_clusts, C)
+    r = state.r
+    p = state.p
+    δ1 = params.δ1
+    δ2 = params.δ2
+    α = params.α
+    β = params.β
+    ζ = params.ζ
+    γ = params.γ
+    repulsion = params.repulsion
+	free_allocation = isempty(final_clusts) # force the result of the Gibbs scan (when we want to compute transition probability only)
+	log_transition_prob = 0 # transition probability of the Gibbs scan
+
+	α_i = zeros(MVector{2})
+    β_i = zeros(MVector{2})
+    ζ_i = zeros(K)
+    γ_i = zeros(K)
+    sum_logD_i = zeros(K)
+    L2_ik_prime = zeros(K)
+    αβratio = α * log(β) - loggamma(α)
+    ζγratio = ζ * log(γ) - loggamma(ζ)
+    loggammaδ1 = loggamma(δ1)
+    loggammaδ2 = loggamma(δ2)
+    logp = log(p)
+    L1 = zeros(MVector{2})
+	L2 = zeros(MVector{2})
+    log_prior_ratio = zeros(MVector{2})
+	logprobs = zeros(MVector{2})
+	@inbounds for i in items_to_reallocate
+		clustsizes[clusts[i]] = clustsizes[clusts[i]] - 1
+		clusts[i] = -1
+		
+		# Calculate everything that we will need
+        @simd for k in 1:2
+            clust_k = findall(clusts .== candidate_clusts[k])
+			sz_clust_k = clustsizes[candidate_clusts[k]]
+			α_i[k] = α + δ1 * sz_clust_k
+			@inline β_i[k] = β + matsum(D, [i], clust_k)
+        end
+        @simd for k in 1:K
+			clust_k = findall(clusts .== C[k])
+			sz_clust_k = clustsizes[C[k]]
+			ζ_i[k] = ζ + δ2 * sz_clust_k
+			γ_i[k] = γ + matsum(D, [i], clust_k)
+			sum_logD_i[k] = matsum(logD, [i], clust_k)
+        end
+		
+		for k in 1:2 # compute cohesive likelihood component for each proposed cluster
+            sz_candidate_clust_k = clustsizes[candidate_clusts[k]]
+            L1[k] = loggamma(α_i[k]) + αβratio - α_i[k] * log(β_i[k]) +
+                (δ1 - 1) * sum_logD_i[candidate_clust_inds[k]] - sz_candidate_clust_k * loggammaδ1
+            log_prior_ratio[k] = log(sz_candidate_clust_k + 1) + logp + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
+		end
+		logprobs .= log_prior_ratio .+ L1
+        for t in 1:K
+            L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
+            ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[C[t]] * loggammaδ2
+        end
+        L2_i = vecsum(L2_ik_prime)
+        for k = 1:2
+            L2[k] = L2_i - L2_ik_prime[candidate_clust_inds[k]]
+        end
+        @. logprobs += L2 * repulsion
 		if free_allocation 
 			k = sample_logweights(logprobs)
 			ci_new = candidate_clusts[k]
@@ -262,10 +360,9 @@ function sample_labels_Gibbs!(
 		# calculate the transition probability
 		logprobs .+= minimum(logprobs)
 		probs = exp.(logprobs)
-		probs ./= sum(probs)
+		probs ./= probs[1] + probs[2]
 		log_transition_prob += log(probs[k])
     end
-    state.K = sum(clustsizes .> 0)
     return log_transition_prob
 end
 
@@ -315,7 +412,7 @@ function sample_labels!(
             szlaunch[claunch[i]] = szlaunch[claunch[i]] + 1
             Klaunch = K + 1
         end
-        candidate_clusts = [claunch[i], claunch[j]]
+        candidate_clusts = SA[claunch[i], claunch[j]]
         for k in S 
             claunch[k] = sample(candidate_clusts)
             szlaunch[clusts[k]] = szlaunch[clusts[k]] - 1
@@ -325,14 +422,14 @@ function sample_labels!(
         
         # restricted Gibbs scans
         for scan_counter in 1:numGibbs 
-            sample_labels_Gibbs!(data, 
+            sample_labels_Gibbs_restricted!(data, 
             launchstate, params, S, candidate_clusts) 
         end
         
         if ci == cj # split proposal
             split[MH_counter] = true
             # final Gibbs scan
-            log_transition_prob = sample_labels_Gibbs!(data, 
+            log_transition_prob = sample_labels_Gibbs_restricted!(data, 
             launchstate, params, S, candidate_clusts) 
             finalstate = launchstate
             cfinal = finalstate.clusts
@@ -367,7 +464,7 @@ function sample_labels!(
             + log(clustsizes[ci]) + log(clustsizes[cj]))
             
             # proposal density ratio pr(new | old) / pr(old | new)
-            log_transition_prob = sample_labels_Gibbs!(data, 
+            log_transition_prob = sample_labels_Gibbs_restricted!(data, 
             launchstate, params, S, candidate_clusts, clusts)
                                 
             log_proposal_ratio = -log_transition_prob
@@ -382,16 +479,15 @@ function sample_labels!(
         # MH acceptance step
         log_acceptance_ratio = minimum(
             [0, log_prior_ratio + log_lik_ratio - log_proposal_ratio])
-        if (log(rand(Uniform())) < log_acceptance_ratio) # accept
+        if log(rand(Uniform())) < log_acceptance_ratio # accept
             state = finalstate
             accept[MH_counter] = true
         end
         # END MH
     end
     
-	
 	# Final Gibbs scan
-    temp = sample_labels_Gibbs!(data, state, params)
+    sample_labels_Gibbs!(data, state, params)
     return (accept = accept, split = split)
 end
 
@@ -399,21 +495,21 @@ end
     runsampler(data, 
     options = MCMCOptionsList(), 
     params = PriorHyperparamsList(); 
-    verbose = true)
+    verbose = true) -> MCMCResult
 
 Runs the MCMC sampler on the data.
 
 # Arguments
 - `data::MCMCData`: contains the distance matrix. 
-- `options = MCMCOptionsList()`: contains the number of iterations, burnin, etc. 
-- `params = PriorHyperparamsList()`: contains the prior hyperparameters for the model.
-- `verbose::Bool = true`: if false, disables all info messages and progress bars. 
+- `options::MCMCOptionsList`: contains the number of iterations, burnin, etc. 
+- `params::PriorHyperparamsList`: contains the prior hyperparameters for the model.
+- `verbose::Bool`: if false, disables all info messages and progress bars. 
 
 # Returns
 A struct of type `MCMCResult` containing the MCMC samples, convergence diagnostics, and summary statistics.
 
 # See also
-[`MCMCData`](@ref), [`MCMCOptionsList`](@ref), [`fitprior`](@ref), [`PriorHyperparamsList`](@ref).
+[`MCMCData`](@ref), [`MCMCOptionsList`](@ref), [`fitprior`](@ref), [`PriorHyperparamsList`](@ref), [`MCMCResult`](@ref).
 """
 function runsampler(data::MCMCData, 
     options::MCMCOptionsList = MCMCOptionsList(), 
@@ -431,7 +527,7 @@ function runsampler(data::MCMCData,
     thin = options.thin
     numsamples = options.numsamples
     if isnothing(params)
-        params = fitprior(data.D, "k-medoids", true).params
+        params = fitprior(data.D, "k-medoids", true; verbose = verbose)
     end
     if isnothing(init)
         init = MCMCState(
@@ -447,8 +543,8 @@ function runsampler(data::MCMCData,
 
     # Start sampling
     j::Int = 1
+    printstyled(ostream, "Run MCMC"; bold = true)
     println(ostream, "MCMC setup: $numiters iterations, $numsamples samples, $(size(data.D, 1)) observations.")
-    runtime = 0
     runtime = @elapsed (
     for i in ProgressBar(1:numiters, output_stream = ostream)
         result.r_acceptances[i] = sample_r!(state, params).accept
@@ -526,7 +622,7 @@ function sample_rp(
     u = params.u
     v = params.v
     C = clustsizes[findall(clustsizes .> 0)]
-    n = sum(C)
+    n = vecsum(C)
     K = length(C)
 	
 	# Initialise result
