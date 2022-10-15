@@ -1,8 +1,8 @@
 data = MCMCData(pnts)
 @test_nothrow global result = runsampler(data; verbose = false) # test defaults
 data = MCMCData(distM)
-@test show(data) # test pretty printing
-@test display(data) # test multiline pretty printing
+@test_nothrow show(data) # test pretty printing
+@test_nothrow display(data) # test multiline pretty printing
 @test_nothrow global result = runsampler(data; verbose = false) # test defaults
 options = MCMCOptionsList(numMH = 0)
 @test_nothrow show(options) # test pretty printing
