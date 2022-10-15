@@ -15,14 +15,14 @@ Computes a point estimate from a vector of samples of cluster allocations by sea
     - `"MPEL"`: minimum posterior expected loss.
     - `"SALSO"`: SALSO algorithm. 
     `"MAP"` and `"MLE"` search among the MCMC samples for the clustering with the maximum log posterior and log likelihood respectively. `"MPEL"` and `"SALSO"` search for a clustering that minimises the posterior expected loss of some loss function specified by the `loss` argument. The former restricts the search space to the samples in `samples`, while the latter uses a heuristic method to search the space of all possible clusterings. 
-- `loss::String`: must be one of `"binder"` (Binder loss), `"omARI"` (one minus the Adjusted Rand Index), `"VI"` (Variation of Information distance), or `"ID"` (Information Distance). Determines the loss function used for the `"MPEL"` and `"SALSO"` methods. 
+- `loss`: Determines the loss function used for the `"MPEL"` and `"SALSO"` methods. Must be either be a string or a function. If specified as a string, must be one of `"binder"` (Binder loss), `"omARI"` (one minus the Adjusted Rand Index), `"VI"` (Variation of Information distance), or `"ID"` (Information Distance). If specified as a function, must have a method defined for `(x::Vector{Int}, y::Vector{Int}) -> Real`. `loss` cannot be given as a function if the method used is "SALSO". 
 
 # Returns
 If `method` is either `"MAP"`, `"MLE"`, or `"MPEL"`, returns a tuple `(clust, i)` where `clust` is a clustering in `samples` and `i` is its sample index. If `method` is `"SALSO"`, returns a vector of cluster labels. 
 """
 function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Union{String, Function} = "VI")
     # input validation
-    if method == "SALSO" || method == "MPEL"
+    if method == "SALSO" || (method == "MPEL" && typeof(loss) == String)
         if loss ∉ ["binder", "omARI", "VI", "ID"]
             throw(ArgumentError("Invalid loss function specifier."))
         end
@@ -41,7 +41,7 @@ function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Unio
     end
     if method == "MPEL" # minimum posterior expectated loss
         # Set loss function
-        if typeof(loss) == Function
+        if loss isa Function
             lossfn = loss
         else typeof(loss) == String
             lossfn = @match loss begin
@@ -107,14 +107,4 @@ function infodist(
     hu = entropy(counts(a)/n)
     hv = entropy(counts(b)/n)
     return normalised ? 1 - mutualinfo(a, b; normed = false) / maximum([hu, hv]) : maximum([hu, hv]) - mutualinfo(a, b; normed = false)
-end
-
-function _infodist(
-    a::ClustLabelVector,
-    b::ClustLabelVector
-    )::Float64
-    n = length(a)
-    hu = entropy(counts(a)/n)
-    hv = entropy(counts(b)/n)
-    return maximum([hu, hv]) - mutualinfo(a, b; normed = false)
 end

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.1]
+
+### Added
+- added tests for pretty printing.
+- added tests for custom loss function in [`getpointestimate`](@ref). 
+
+### Fixed
+- verbose output in sampler missing newline. 
+- custom loss function when computing a point estimate. 
+
+### Removed
+- `_infodist` not in use, removed.
+  
 ## [0.2.0]
 
 ### Added
@@ -15,8 +28,8 @@
 
 ### Breaking
 - MCMCOptions constructor changed account for change in point-estimate calculation. 
-- [`fitprior`] now only returns the hyperparameter list.
-- removed `summarise` for `MCMCResult` objects (use pretty printing instead).
+- [`fitprior`](@ref) now only returns the hyperparameter list.
+- removed `summarise` for [`MCMCResult`](@ref) objects (use pretty printing instead).
 
 ### Fixed
 - corrected computation of log-likelihood in result.

@@ -543,8 +543,9 @@ function runsampler(data::MCMCData,
 
     # Start sampling
     j::Int = 1
-    printstyled(ostream, "Run MCMC"; bold = true)
-    println(ostream, "MCMC setup: $numiters iterations, $numsamples samples, $(size(data.D, 1)) observations.")
+    printstyled(ostream, "Run MCMC\n"; bold = true, color= :blue)
+    printstyled(ostream, "Setup: "; bold = true)
+    println(ostream, "$numiters iterations, $numsamples samples, $(size(data.D, 1)) observations.")
     runtime = @elapsed (
     for i in ProgressBar(1:numiters, output_stream = ostream)
         result.r_acceptances[i] = sample_r!(state, params).accept

@@ -1,4 +1,4 @@
-using RedClust, Test
+using RedClust, Test, Clustering
 using StatsBase: sample
 
 macro throws(expr)
