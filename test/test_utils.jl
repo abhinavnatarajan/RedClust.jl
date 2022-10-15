@@ -38,3 +38,25 @@ end
     @test sum(v) ≈ RedClust.vecsum(v)
     @test sum(v[inds1]) ≈ RedClust.vecsum(v, inds1)
 end
+
+@testset "printing time" begin
+    @test RedClust.prettytime(1e-9) == "1.00 ns"
+    @test RedClust.prettytime(999e-9) == "999.00 ns"
+    @test RedClust.prettytime(1e-6) == "1.00 μs"
+    @test RedClust.prettytime(999e-6) == "999.00 μs"
+    @test RedClust.prettytime(1e-3) == "1.00 ms"
+    @test RedClust.prettytime(999e-3) == "999.00 ms"
+    @test RedClust.prettytime(1) == "1.00 s"
+    @test RedClust.prettytime(5) == "5.00 s"
+    @test RedClust.prettytime(60) == "1 min"
+    @test RedClust.prettytime(120) == "2 mins"
+    @test RedClust.prettytime(65) == "1 min 5 s"
+    @test RedClust.prettytime(125) == "2 mins 5 s"
+    @test RedClust.prettytime(3600) == "1 hr"
+    @test RedClust.prettytime(7200) == "2 hrs"
+    @test RedClust.prettytime(7205) == "2 hrs 5 s"
+    @test RedClust.prettytime(7265) == "2 hrs 1 min 5 s"
+    @test RedClust.prettytime(7325) == "2 hrs 2 mins 5 s"
+    @test RedClust.prettytime(24 * 3600) == "1 day"
+    @test RedClust.prettytime(2 * 24 * 3600) == "2 days"
+end

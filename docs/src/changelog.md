@@ -1,4 +1,9 @@
 # Changelog
+## [0.2.2]
+
+### Fixed
+- corrected time not printing in the correct format. 
+- moved `prettytime` and `prettynumber` to `utils.jl`.
 
 ## [0.2.1]
 

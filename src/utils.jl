@@ -156,3 +156,36 @@ Convert a vector of vectors into a matrix, where each vector becomes a column in
 function makematrix(x::AbstractVector{<:AbstractVector})::Matrix
     [x[i][j] for j in 1:length(x[1]), i in 1:length(x)]
 end
+
+function prettytime(t)
+    if t < 1e-6 # nanoseconds
+        out = @sprintf "%.2f ns" t * 1e9
+    elseif t ≥ 1e-6 && t < 1e-3 # microseconds
+        out = @sprintf "%.2f μs" t * 1e6
+    elseif t ≥ 1e-3 && t < 1 # milliseconds
+        out = @sprintf "%.2f ms" t * 1e3
+    elseif t < 60 # seconds
+        out = @sprintf "%.2f s" t
+    else
+        x = Dates.canonicalize(Dates.Second(Integer(floor(t))))
+        out = ""
+        for i in 1:length(x.periods)
+            out *= string(x.periods[i].value) * " " 
+            if typeof(x.periods[i]) == Second
+                out *= "s"
+            elseif typeof(x.periods[i]) == Minute
+                out *= "min" * (x.periods[i].value != 1 ? "s" : "")
+            elseif typeof(x.periods[i]) == Hour
+                out *= "hr" * (x.periods[i].value != 1 ? "s" : "")
+            elseif typeof(x.periods[i]) == Day
+                out *= "day" * (x.periods[i].value != 1 ? "s" : "")
+            end
+            if i != length(x.periods) 
+                out *=  " "
+            end
+        end
+    end
+    out
+end
+
+prettynumber(x) = x < 1 ? @sprintf("%.3e", x) : @sprintf("%.3f", x)

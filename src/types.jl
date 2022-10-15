@@ -286,27 +286,3 @@ end
 function Base.show(io::IO, result::MCMCResult)
     print(io, "MCMC result with $(result.options.numsamples) samples")
 end
-
-function prettytime(t)
-    if t < 1e-6
-        x = Dates.canonicalize(Dates.Nanosecond(Integer(floor(t * 1e9))))
-    elseif t ≥ 1e-6 && t < 1e-3
-        x = Dates.canonicalize(Dates.Microsecond(Integer(floor(t * 1e6))))
-    elseif t ≥ 1e-3 && t < 1
-        x = Dates.canonicalize(Dates.Millisecond(Integer(floor(t * 1e3))))
-    else
-        x = Dates.canonicalize(Dates.Second(Integer(floor(t)))) 
-    end
-    out = @match x.periods[1] begin
-        _::Nanosecond => @sprintf("%.3f ns", t * 1e9)
-        _::Microsecond => @sprintf("%.3f μs", t * 1e6)
-        _::Millisecond => @sprintf("%.3f μs", t * 1e3)
-        _::Second => @sprintf("%.3f s", t)
-        _::Minute => @sprintf("%dm%ds", x.periods[1].value, x.periods[2].value)
-        _::Hour => @sprintf("%dh%dm%ds", x.periods[1].value, x.periods[2].value, x.periods[3].value)
-        _::Day => @sprintf("%dD%dh%dm", x.periods[1].value, x.periods[2].value, x.periods[3].value)
-    end
-    out
-end
-
-prettynumber(x) = x < 1 ? @sprintf("%.3e", x) : @sprintf("%.3f", x)
