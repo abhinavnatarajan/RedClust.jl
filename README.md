@@ -6,6 +6,8 @@
 [![Latest release][release-img]][release-url]
 [![Code Coverage][codecov-img]][codecov-url]
 
+## Documentation 
+
 [![Development version documentation][docs-dev-img]][docs-dev-url]
 [![Stable version documentation][docs-stable-img]][docs-stable-url]
 [![arxiv paper link][arxiv-img]][arxiv-url]
