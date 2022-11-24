@@ -2,7 +2,6 @@ using Distributions: Dirichlet, MvNormal, pdf
 using LinearAlgebra: I
 using LoopVectorization: @turbo
 using Random: rand
-using RCall: @R_str, rcopy
 using StatsBase: autocor, wsample, levelsmap, mean
 
 # use the Gumbel-max trick to sample from a vector of discrete log-probabilities

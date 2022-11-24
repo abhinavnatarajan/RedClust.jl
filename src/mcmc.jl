@@ -1,13 +1,10 @@
-using Clustering: kmedoids, varinfo
+using Clustering: kmedoids
 using Distributions: Normal, Uniform, Gamma, Beta, logpdf, truncated
-using LinearAlgebra: I
-using LoopVectorization
 using ProgressBars: ProgressBar
 using SpecialFunctions: loggamma
 using StaticArrays
 using StatsBase: sample, counts, mean_and_var, mean, var
 using Random: rand
-using RCall: rcopy, @R_str
 
 function loglik(
     data::MCMCData, 

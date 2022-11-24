@@ -25,21 +25,22 @@ function evaluateclustering(clusts::ClustLabelVector, truth::ClustLabelVector)
 end
 
 """
-    summarise(clusts::ClustLabelVector, 
+    summarise([io::IO], clusts::ClustLabelVector, 
     truth::ClustLabelVector, 
     printoutput = true) -> String
-Returns a string that summarises the clustering accuracy of `clusts` with respect to the ground truth in `truth`. If `printoutput = true`, the output will be printed to console before being returned. 
+Prints a summary of the clustering accuracy of `clusts` with respect to the ground truth in `truth`. The output is printed to the output stream `io`, which defaults to `stdout` if not provided.
 """
-function summarise(clusts::ClustLabelVector, truth::ClustLabelVector, printoutput=true)::String
-    output = ""
+function summarise(io::IO, clusts::ClustLabelVector, truth::ClustLabelVector)::String
     temp = evaluateclustering(clusts, truth)
-    output *= "Clustering summary\n"
-    output *= "Number of clusters : $(length(unique(clusts)))\n"
-    output *= "Normalised Binder loss : $(temp.nbloss)\n"
-    output *= "Adjusted Rand Index : $(temp.ari)\n"
-    output *= "Normalised Variation of Information (NVI) distance : $(temp.nvi)\n"
-    output *= "Normalised Information Distance (NID) : $(temp.nid)\n"
-    output *= "Normalised Mutual Information : $(temp.nmi)\n"
-    if printoutput print(output) end
-    return output
+    printstyled(io, "Clustering summary\n"; color = :green, bold = true)
+    println(io, "Number of clusters : $(length(unique(clusts)))")
+    println(io, "Normalised Binder loss : $(temp.nbloss)")
+    println(io, "Adjusted Rand Index : $(temp.ari)")
+    println(io, "Normalised Variation of Information (NVI) distance : $(temp.nvi)")
+    println(io, "Normalised Information Distance (NID) : $(temp.nid)")
+    println(io, "Normalised Mutual Information : $(temp.nmi)")
+end
+
+function summarise(clusts::ClustLabelVector, truth::ClustLabelVector)::String
+    summarise(stdout, clusts, truth)
 end

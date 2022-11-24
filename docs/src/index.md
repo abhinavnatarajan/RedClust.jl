@@ -12,7 +12,6 @@ The package can be installed by typing `]add RedClust` into the Julia REPL or by
 using Pkg
 Pkg.add("RedClust")
 ```
-RedClust also requires [`R`](https://www.r-project.org/) and the R package [`salso`](https://CRAN.R-project.org/package=salso). If R is already installed, make sure the `R_HOME` environment variable is set to the R home directory (you could run `R.home()` in R to determine the location of this directory). If R or `salso` are not found, they are automatically installed during package installation.  
 
 ## Basic example
 ```julia
@@ -74,10 +73,8 @@ A clustering point-estimate ``\boldsymbol c^*`` can be determined in a number of
 ```math
 \boldsymbol c^* = \argmin_{\boldsymbol c} \mathbb{E}_{\boldsymbol c'}[\ell(\boldsymbol c, \boldsymbol c')]
 ```
-   1. A naive method is to restrict the search space to those clusterings visited by the MCMC sampler. 
-   2. A better method is the SALSO algorithm ([Dahl et al., 2022](#dahl)), implemented in the [R](https://www.r-project.org/) package [`salso`](https://CRAN.R-project.org/package=salso), which heuristically searches the space of all possible clusterings.
-All of these methods are implemented in RedClust in the function [`getpointestimate`](@ref).
-
+   1. A naive method is to restrict the search space to those clusterings visited by the MCMC sampler. This method is implemented in RedClust in the function [`getpointestimate`](@ref).
+   2. A better method is the SALSO algorithm ([Dahl et al., 2022](#dahl)), implemented in the [R](https://www.r-project.org/) package [salso](https://CRAN.R-project.org/package=salso), which heuristically searches the space of all possible clusterings. You can use the [RCall](https://github.com/JuliaInterop/RCall.jl) package in Julia to make calls to the salso package in R if you have R and salso installed.  
 
 ## Citing this package
 If you want to use this package in your work, please cite it as:

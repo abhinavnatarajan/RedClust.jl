@@ -1,6 +1,4 @@
-using Match
 using Clustering: randindex, mutualinfo, varinfo
-using LoopVectorization
 using StatsBase: entropy
 
 """
@@ -13,42 +11,42 @@ Computes a point estimate from a vector of samples of cluster allocations by sea
     - `"MAP"`: maximum a posteriori.
     - `"MLE"`: maximum likelihood estimation.
     - `"MPEL"`: minimum posterior expected loss.
-    - `"SALSO"`: SALSO algorithm. 
-    `"MAP"` and `"MLE"` search among the MCMC samples for the clustering with the maximum log posterior and log likelihood respectively. `"MPEL"` and `"SALSO"` search for a clustering that minimises the posterior expected loss of some loss function specified by the `loss` argument. The former restricts the search space to the samples in `samples`, while the latter uses a heuristic method to search the space of all possible clusterings. 
-- `loss`: Determines the loss function used for the `"MPEL"` and `"SALSO"` methods. Must be either be a string or a function. If specified as a string, must be one of `"binder"` (Binder loss), `"omARI"` (one minus the Adjusted Rand Index), `"VI"` (Variation of Information distance), or `"ID"` (Information Distance). If specified as a function, must have a method defined for `(x::Vector{Int}, y::Vector{Int}) -> Real`. `loss` cannot be given as a function if the method used is "SALSO". 
+    `"MAP"` and `"MLE"` search among the MCMC samples for the clustering with the maximum log posterior and log likelihood respectively. `"MPEL"` searches for a clustering that minimises the posterior expected loss of some loss function specified by the `loss` argument. The search space is the set of samples in `samples`. 
+- `loss`: Determines the loss function used for the `"MPEL"` method. Must be either be a string or a function. If specified as a string, must be one of `"binder"` (Binder loss), `"omARI"` (one minus the Adjusted Rand Index), `"VI"` (Variation of Information distance), or `"ID"` (Information Distance). If specified as a function, must have a method defined for `(x::Vector{Int}, y::Vector{Int}) -> Real`. 
 
 # Returns
-If `method` is either `"MAP"`, `"MLE"`, or `"MPEL"`, returns a tuple `(clust, i)` where `clust` is a clustering in `samples` and `i` is its sample index. If `method` is `"SALSO"`, returns a vector of cluster labels. 
+Returns a tuple `(clust, i)` where `clust` is a clustering in `samples` and `i` is its sample index. 
 """
-function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Union{String, Function} = "VI")
+function getpointestimate(samples::MCMCResult; method::String = "MAP", loss::Union{String, Function} = "VI")::Tuple{ClustLabelVector, Int}
     # input validation
-    if method == "SALSO" || (method == "MPEL" && typeof(loss) == String)
+    if method == "MPEL" && typeof(loss) == String
         if loss ∉ ["binder", "omARI", "VI", "ID"]
             throw(ArgumentError("Invalid loss function specifier."))
         end
     end
-    if method ∉ ["MAP", "MLE", "MPEL", "SALSO"]
+    if method ∉ ["MAP", "MLE", "MPEL"]
         throw(ArgumentError("Invalid method specifier."))
     end
 
     if method == "MAP" # maximum a posteriori
         i = argmax(samples.logposterior)
         return (samples.clusts[i], i)
-    end
-    if method == "MLE" # maximum likelihood estimation
+    elseif method == "MLE" # maximum likelihood estimation
         i = argmax(samples.loglik)
         return (samples.clusts[i], i)
-    end
-    if method == "MPEL" # minimum posterior expectated loss
+    elseif method == "MPEL" # minimum posterior expectated loss
         # Set loss function
         if loss isa Function
             lossfn = loss
-        else typeof(loss) == String
-            lossfn = @match loss begin
-                "binder" => (x::ClustLabelVector, y::ClustLabelVector) -> randindex(x, y)[3]
-                "omARI" => (x::ClustLabelVector, y::ClustLabelVector) -> 1 - randindex(x, y)[1]
-                "VI" => varinfo
-                "ID" => (x::ClustLabelVector, y::ClustLabelVector) -> infodist(x, y; normalised = false)
+        elseif typeof(loss) == String
+            if loss == "binder" 
+                lossfn = (x::ClustLabelVector, y::ClustLabelVector) -> randindex(x, y)[3]
+            elseif loss == "omARI" 
+                lossfn = (x::ClustLabelVector, y::ClustLabelVector) -> 1 - randindex(x, y)[1]
+            elseif loss == "VI"
+                lossfn = varinfo
+            elseif loss == "ID"
+                lossfn = (x::ClustLabelVector, y::ClustLabelVector) -> infodist(x, y; normalised = false)
             end
         end
         clusts = samples.clusts
@@ -61,13 +59,6 @@ function getpointestimate(samples::MCMCResult; method::String= "MAP", loss::Unio
         lossmatrix += transpose(lossmatrix)
         i = argmin(vec(sum(lossmatrix, dims = 1)))
         return (clusts[i], i)
-    end
-    if method == "SALSO"
-        clustsM = makematrix(samples.clusts)'
-        return rcopy(R"""
-        library(salso)
-        salso(x = $clustsM, loss = $loss)
-        """)
     end
 end
 

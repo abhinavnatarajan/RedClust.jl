@@ -1,9 +1,28 @@
 using RedClust
 using Random: seed!
 using StatsBase: counts
-using CairoMakie
+using Plots
+theme(:ggplot2)
+default(fontfamily = "Computer Modern")
 
-# Generate data 
+# Define convenience functions for plotting
+function sqmatrixplot(X::Matrix, size_px = (500, 400))
+    M, N = size(X)
+    heatmap(
+        X, 
+        aspect_ratio=:equal, 
+        c=:Blues, 
+        xlim=(0,M), ylim=(0,N), 
+        fontfamily="Computer Modern",
+        colorbar_tickfontsize=18,
+        size = size_px)
+end
+
+function barplot(X::Vector)
+    bar(sort(unique(X)), counts(X), legend = false)
+end
+
+########## Generate data ##########
 seed!(44)
 K = 10 # Number of clusters 
 N = 100 # Number of points
@@ -12,66 +31,34 @@ data_dim = 10 # Data dimension
 data = generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim);
 points, distmatrix, clusts, probs, oracle_coclustering = data;
 # Plot the true adjacency matrix and oracle co-clustering matrices as heatmaps
-fig1 = Figure()
-Axis(fig1[1, 1], aspect = 1)
-heatmap!(adjacencymatrix(clusts), colormap = :Blues)
-fig1
-fig2 = Figure()
-Axis(fig2[1, 1], aspect = 1)
-heatmap!(oracle_coclustering, colormap = :Blues)
-fig2
+sqmatrixplot(adjacencymatrix(clusts))
+sqmatrixplot(oracle_coclustering)
 
+############### MCMC ##############
 # Determine the best the prior hyperparameters
 params = fitprior(points, "k-means", false)
-
 # MCMC options
 options = MCMCOptionsList(numiters=5000)
 data = MCMCData(points)
-
 # Run the sampler
 result = runsampler(data, options, params)
-pointestimate, index = getpointestimate(result; loss = "binder", method="MPEL")
+pointestimate, index = getpointestimate(result; loss = "binder", method="MAP")
 
-# Summary of MCMC and point estimate
-summarise(result)
+
+######## Check the results ########
+# Summary of point estimate
 summarise(pointestimate, clusts)
-
-# Check the results
 # Posterior coclustering matrix
-fig3 = Figure()
-Axis(fig3[1, 1], aspect = 1)
-heatmap!(result.posterior_coclustering, colormap = :Blues)
-fig3
+sqmatrixplot(result.posterior_coclustering)
 # Point-estimate adjacency matrix
-fig4 = Figure()
-Axis(fig4[1, 1], aspect = 1)
-heatmap!(adjacencymatrix(pointestimate), colormap = :Blues)
-fig4
-
+sqmatrixplot(adjacencymatrix(pointestimate))
 # Posterior distribution of K
-K_barplot = Figure(resolution = (400, 300), fontsize = 20)
-ax = Axis(K_barplot[1, 1])
-barplot!(ax, minimum(unique(result.K)):maximum(unique(result.K)), counts(result.K))
-K_barplot
+barplot(result.K)
 # Posterior distribution of r
-r_hist = Figure(resolution = (400, 300), fontsize = 20)
-ax = Axis(r_hist[1, 1])
-hist!(ax, result.r, bins = 25)
-r_hist
+histogram(result.r, legend=false)
 # Posterior distribution of p
-p_hist = Figure(resolution = (400, 300), fontsize = 20)
-ax = Axis(p_hist[1, 1])
-hist!(ax, result.p, bins = 25)
-p_hist
-
-
+histogram(result.p, legend=false)
 # Log-likelihood
-loglik_plot = Figure(fontsize = 20)
-ax = Axis(loglik_plot[1, 1])
-lines!(ax, result.loglik)
-loglik_plot
+plot(result.loglik, legend = false)
 # Log-posterior
-logposterior_plot = Figure(fontsize = 20)
-ax = Axis(logposterior_plot[1, 1])
-lines!(ax, result.logposterior)
-logposterior_plot
+plot(result.logposterior, legend = false)

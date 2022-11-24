@@ -1,4 +1,13 @@
 # Changelog
+
+## [1.0.0]
+
+### Added
+- examples from the main paper are now included in the examples folder. 
+
+### Removed 
+- dependency on RCall and the various calls to the salso algorithm were removed. It is left to the user to make these calls if necessary. 
+
 ## [0.2.2]
 
 ### Fixed

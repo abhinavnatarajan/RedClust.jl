@@ -2,7 +2,6 @@ using Clustering: kmeans, kmedoids
 using Distances: pairwise, Euclidean
 using Distributions: fit_mle, Gamma, shape, rate, Distributions
 using ProgressBars: ProgressBar
-using RCall: rcopy, @R_str
 using StatsBase: counts, std
 
 
@@ -10,7 +9,6 @@ using StatsBase: counts, std
     fitprior(data, algo, diss = false; 
 	Kmin = 1, 
 	Kmax = Int(floor(size(data)[end] / 2), 
-	useR = false, 
 	verbose = true)
 
 Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
@@ -21,7 +19,6 @@ Determines the best prior hyperparameters from the data. A notional clustering i
 - `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
 - `Kmin::Integer`: minimum number of clusters.
 - `Kmax::Integer`: maximum number of clusters. If left unspecified, it is set to half the number of observations.
-- `useR::Bool`: if `false`, will use the `kmeans` or `kmedoids` from the Julia package [`Clustering.jl`](https://juliastats.org/Clustering.jl/stable/). If `true`, will use `kmeans` or `cluster::pam` in R. 
 - `verbose::Bool`: if false, disables all info messages and progress bars. 
 
 # Returns
@@ -63,60 +60,21 @@ function fitprior(
 	println(ostream, "Computing notional clustering.")
 	objective = Vector{Float64}(undef, Kmax - Kmin + 1)
 	if algo == "k-means"
-		if useR
-			input = x'
-			objective = rcopy(
-				R"""
-				sapply($Kmin:$Kmax, 
-				function(k){kmeans($input, centers = k, nstart = 20)$tot.withinss})
-				"""
-				) 
-		else
-			clustfn = kmeans
-			input = x
-		end
+		clustfn = kmeans
+		input = x
 	elseif algo == "k-medoids"
 		input = dissM
-		if useR
-			objective = rcopy(
-				R"""
-				library(cluster)
-				sapply($Kmin:$Kmax, 
-				function(k){pam($dissM, k = k, diss = T, pamonce = 5)$objective[["swap"]]})
-				"""
-				)
-		else
-			clustfn = kmedoids
-		end
+		clustfn = kmedoids
 	end
 
-	if !useR
-		@inbounds for k in ProgressBar(1:(Kmax-Kmin+1), output_stream = ostream)
-			temp = clustfn(input, k; maxiter=1000)
-			objective[k] = temp.totalcost
-			!temp.converged && @warn "Clustering did not converge at K = $k"
-		end
+	@inbounds for k in ProgressBar(1:(Kmax-Kmin+1), output_stream = ostream)
+		temp = clustfn(input, k; maxiter=1000)
+		objective[k] = temp.totalcost
+		!temp.converged && @warn "Clustering did not converge at K = $k"
 	end
 	elbow = detectknee(Kmin:Kmax, objective)[1]
 	K = elbow
-	if useR
-		if (algo == "k-means")
-			notionalclustering = rcopy(
-				R"""
-				kmeans($input, centers = $K, nstart = 20)
-				"""
-			)[:cluster]
-		elseif algo == "k-medoids"
-			notionalclustering = rcopy(
-				R"""
-				library(cluster)
-				pam($input, k = $K, diss = T, pamonce = 5)
-				"""
-			)[:clustering]
-		end
-	else
-		notionalclustering = clustfn(input, K; maxiter=1000).assignments
-	end
+	notionalclustering = clustfn(input, K; maxiter=1000).assignments
 	notionaladjmatrix = adjacencymatrix(notionalclustering)
 	A = uppertriangle(dissM)[uppertriangle(notionaladjmatrix) .== 1]
 	B = uppertriangle(dissM)[uppertriangle(notionaladjmatrix) .== 0]

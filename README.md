@@ -20,7 +20,6 @@ The package can be installed by typing `]add RedClust` into the Julia REPL or by
 using Pkg
 Pkg.add("RedClust")
 ```
-RedClust also requires [R](https://www.r-project.org/) and the R package [`salso`](https://CRAN.R-project.org/package=salso). If R is already installed, make sure the `R_HOME` environment variable is set to the R home directory (you could run `R.home()` in R to determine the location of this directory). If R or `salso` are not found, they are automatically installed during package installation.   
 
 ## Basic example
 ```julia
