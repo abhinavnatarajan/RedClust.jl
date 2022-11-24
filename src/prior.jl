@@ -4,7 +4,6 @@ using Distributions: fit_mle, Gamma, shape, rate, Distributions
 using ProgressBars: ProgressBar
 using StatsBase: counts, std
 
-
 """
     fitprior(data, algo, diss = false; 
 	Kmin = 1, 
@@ -130,6 +129,36 @@ function fitprior(
 		K_initial = K
 	)
 	return params
+end
+
+"""
+	sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
+
+Generate `n` synthetic distances from the prior predictive distribution encapsulated in `params`. `type` must be either `intercluster` or `intracluster`.
+"""
+function sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
+	if type ∉ ["intercluster", "intracluster"]
+		throw(ArgumentError("type must be either \"intercluster\" or \"intracluster\"."))
+	end
+	if numsamples < 1
+		throw(ArgumentError("numsamples must be a positive integer."))
+	end
+	if type == "intracluster"
+		a = params.α
+		b = params.β
+		δ = params.δ1
+	else
+		a = params.ζ
+		b = params.γ
+		δ = params.δ2
+	end
+	dist1 = Gamma(a, 1/b)
+	samples = Vector{Float64}(undef, numsamples)
+	for i = 1:numsamples
+		dist2 = Gamma(δ, 1/rand(dist1))
+		samples[i] = rand(dist2)
+	end
+	samples
 end
 
 function detectknee(

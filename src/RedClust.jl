@@ -3,6 +3,8 @@ module RedClust
 export 
 # fit prior
 fitprior, 
+sampledist,
+
 # MCMC sampler
 runsampler,
 

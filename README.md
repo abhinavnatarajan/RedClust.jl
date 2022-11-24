@@ -30,7 +30,7 @@ Pkg.add("RedClust")
 using RedClust
 # Generate data
 points, distM, clusts, probs, oracle_coclustering = 
-	generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim)
+	generatemixture(100, 10; α = 10, σ = 0.25, dim = 10)
 # Let RedClust choose the best prior hyperparameters
 params = fitprior(pnts, "k-means", false)
 # Set the MCMC options
@@ -40,8 +40,7 @@ data = MCMCData(points)
 result = runsampler(data, options, params)
 # Get a point estimate 
 pointestimate, index = getpointestimate(result)
-# Summary of MCMC and point estimate
-summarise(result)
+# Summary of point estimate
 summarise(pointestimate, clusts)
 ```
 
