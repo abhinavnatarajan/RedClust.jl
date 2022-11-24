@@ -3,6 +3,8 @@ using LinearAlgebra: I
 using LoopVectorization: @turbo
 using Random: rand
 using StatsBase: autocor, wsample, levelsmap, mean
+using Printf: @sprintf
+using Dates
 
 # use the Gumbel-max trick to sample from a vector of discrete log-probabilities
 @inline function sample_logweights(logprobs::AbstractVector{Float64})::Int
