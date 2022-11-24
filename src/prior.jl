@@ -134,7 +134,7 @@ end
 """
 	sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
 
-Generate `n` synthetic distances from the prior predictive distribution encapsulated in `params`. `type` must be either `intercluster` or `intracluster`.
+Generate a vector of `n` synthetic distances from the prior predictive distribution encapsulated in `params`. `type` must be either "intercluster" or "intracluster".
 """
 function sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
 	if type ∉ ["intercluster", "intracluster"]

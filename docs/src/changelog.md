@@ -4,6 +4,8 @@
 
 ### Added
 - examples from the main paper are now included in the examples folder. 
+- the examples now have more plots.
+- functionality to sample the distances from the prior predictive distribution (see [`sampledist`](@ref)).
 
 ### Removed 
 - dependency on RCall and the various calls to the salso algorithm were removed. It is left to the user to make these calls if necessary. 

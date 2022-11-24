@@ -3,7 +3,11 @@ using Random: seed!
 using StatsBase: counts
 using Plots, StatsPlots
 theme(:ggplot2)
-default(fontfamily = "Computer Modern")
+default(fontfamily = "Computer Modern", 
+guidefontsize = 16, 
+tickfontsize = 16, 
+colorbar_tickfontsize = 16, 
+legend_font_pointsize = 16)
 
 # Define convenience functions for plotting
 function sqmatrixplot(X::Matrix, size_px = (500, 400))
@@ -13,7 +17,6 @@ function sqmatrixplot(X::Matrix, size_px = (500, 400))
         aspect_ratio=:equal, 
         c=:Blues, 
         xlim=(0,M), ylim=(0,N), 
-        colorbar_tickfontsize=18,
         size = size_px)
 end
 
@@ -39,7 +42,7 @@ empirical_intracluster = uppertriangle(distmatrix)[
     uppertriangle(adjacencymatrix(clusts)) .== 1]
 empirical_intercluster = uppertriangle(distmatrix)[
     uppertriangle(adjacencymatrix(clusts)) .== 0]
-histogram(empirical_intercluster, opacity=0.7, linewidth=0, label="ICD")
+histogram(empirical_intercluster, opacity=0.7, linewidth=0, label="ICD", xlabel = "Distance", ylabel="Frequency")
 histogram!(empirical_intracluster, opacity=0.7, bins=40, linewidth = 0, label="WCD")
 
 ############### MCMC ##############
@@ -48,7 +51,7 @@ params = fitprior(points, "k-means", false)
 # Empirical vs prior predictive density of distances
 pred_intracluster = sampledist(params, 10000, "intracluster")
 pred_intercluster = sampledist(params, 10000, "intercluster")
-density(pred_intracluster, label="Simulated WCD")
+density(pred_intracluster, label="Simulated WCD", xlabel = "Distance", ylabel = "Density", size = (700, 500))
 density!(pred_intercluster, label="Simulated ICD")
 density!(empirical_intracluster, label="Empirical WCD")
 density!(empirical_intercluster, label="Empirical ICD")
@@ -67,12 +70,16 @@ sqmatrixplot(result.posterior_coclustering)
 # Point-estimate adjacency matrix
 sqmatrixplot(adjacencymatrix(pointestimate))
 # Posterior distribution of K
-barplot(result.K)
+bar(sort(unique(result.K)), counts(result.K), 
+legend = false, 
+opacity = 0.7, 
+linewidth = 0, xlabel = "K", ylabel = "Frequency", 
+size = (400, 400))
 # Posterior distribution of r
-histogram(result.r, opacity = 0.7, linewidth = 0, legend = false)
+histogram(result.r, opacity = 0.7, linewidth = 0, legend = false, ylabel = "Frequency", xlabel = "r")
 # Posterior distribution of p
-histogram(result.p, opacity = 0.7, linewidth = 0, legend = false)
+histogram(result.p, opacity = 0.7, linewidth = 0, legend = false, ylabel = "Frequency", xlabel = "p")
 # Log-likelihood
-plot(result.loglik, legend = false)
+plot(result.loglik, legend = false, xlabel = "Iteration", ylabel = "Log likelihood")
 # Log-posterior
-plot(result.logposterior, legend = false)
+plot(result.logposterior, legend = false, xlabel = "Iteration", ylabel = "Log posterior")
