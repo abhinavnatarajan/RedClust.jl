@@ -13,6 +13,7 @@ function loglik(
     D = data.D
     logD = data.logD
     clusts = state.clusts
+    n = length(clusts)
     clustsizes = state.clustsizes
     K = state.K
     δ1 = params.δ1
@@ -28,7 +29,7 @@ function loglik(
     loggammaδ2 = loggamma(δ2)
 
 	C = findall(clustsizes .> 0)
-	L::Float64 = 0
+	L1::Float64 = 0
 	
 	# Cohesive part of likelihood 
     @inbounds for k = 1:K
@@ -38,7 +39,7 @@ function loglik(
         pairs_k = binomial(sz_k, 2)
         a = α + δ1 * pairs_k
         b = β + matsum(D, clust_k, clust_k) / 2 
-        L += (δ1 - 1) * matsum(logD, clust_k, clust_k) / 2 - pairs_k * loggammaδ1 +
+        L1 += (δ1 - 1) * matsum(logD, clust_k, clust_k) / 2 - pairs_k * loggammaδ1 +
             αβratio +
             loggamma(a)  - a * log(b)
     end
@@ -59,7 +60,7 @@ function loglik(
                 loggamma(z) - z * log(g)
         end
     end
-    L += L2 * repulsion
+    L = (L1 + L2 * repulsion)
 	return L
 end
 
@@ -244,7 +245,6 @@ function sample_labels_Gibbs!(
             log_prior_ratio[m] = log(sz_candidate_clust_k + 1) + logp + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
         end
 
-		@. logprobs = log_prior_ratio + L1
         for t in C_i 
             L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
             ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[t] * loggammaδ2
@@ -253,7 +253,7 @@ function sample_labels_Gibbs!(
         for k = 1:m
             L2[k] = L2_i - (clustsizes[candidate_clusts[k]] != 0) * L2_ik_prime[candidate_clusts[k]]
         end
-        @. logprobs += L2 * repulsion
+        @. logprobs = log_prior_ratio + (L1 + L2 * repulsion)
 
         k = sample_logweights(logprobs)
         ci_new = candidate_clusts[k]
@@ -277,6 +277,7 @@ function sample_labels_Gibbs_restricted!(
 	D = data.D
     logD = data.logD
     clusts = state.clusts
+    n = length(clusts)
     clustsizes = state.clustsizes
     K = state.K
     C = findall(clustsizes .> 0)
@@ -333,7 +334,6 @@ function sample_labels_Gibbs_restricted!(
                 (δ1 - 1) * sum_logD_i[candidate_clust_inds[k]] - sz_candidate_clust_k * loggammaδ1
             log_prior_ratio[k] = log(sz_candidate_clust_k + 1) + logp + log(sz_candidate_clust_k - 1 + r) - log(sz_candidate_clust_k)
 		end
-		logprobs .= log_prior_ratio .+ L1
         for t in 1:K
             L2_ik_prime[t] = loggamma(ζ_i[t]) - ζ_i[t] * log(γ_i[t]) +
             ζγratio + (δ2 - 1) * sum_logD_i[t] - clustsizes[C[t]] * loggammaδ2
@@ -342,7 +342,7 @@ function sample_labels_Gibbs_restricted!(
         for k = 1:2
             L2[k] = L2_i - L2_ik_prime[candidate_clust_inds[k]]
         end
-        @. logprobs += L2 * repulsion
+        @. logprobs = log_prior_ratio + (L1 + L2 * repulsion) 
 		if free_allocation 
 			k = sample_logweights(logprobs)
 			ci_new = candidate_clusts[k]
