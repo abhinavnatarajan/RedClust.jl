@@ -68,7 +68,7 @@ end
 @doc raw"""
     PriorHyperparamsList(; [kwargs])
 
-Contains the prior hyperparameters for the model. 
+Contains the prior hyperparameters for the model. It is recommended to set the values using the [`fitprior`](@ref) function. Do not set these values manually unless you know what you are doing. 
 
 # Constructor arguments
 - `δ1::Float64 = 1`: the parameter ``\delta_1``.

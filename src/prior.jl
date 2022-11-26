@@ -1,6 +1,6 @@
 using Clustering: kmeans, kmedoids
 using Distances: pairwise, Euclidean
-using Distributions: fit_mle, Gamma, shape, rate, Distributions
+using Distributions: fit_mle, Gamma, shape, rate, Distributions, Beta
 using ProgressBars: ProgressBar
 using StatsBase: counts, std
 
@@ -132,11 +132,12 @@ function fitprior(
 end
 
 """
-	sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
+	sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)::Vector{Float64}
 
 Generate a vector of `n` synthetic distances from the prior predictive distribution encapsulated in `params`. `type` must be either "intercluster" or "intracluster".
 """
-function sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
+function sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)::Vector{Float64}
+	# Input validation
 	if type ∉ ["intercluster", "intracluster"]
 		throw(ArgumentError("type must be either \"intercluster\" or \"intracluster\"."))
 	end
@@ -159,6 +160,34 @@ function sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)
 		samples[i] = rand(dist2)
 	end
 	samples
+end
+
+"""
+	sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int}
+
+Returns a vector of `numsamples` smmples of ``K`` (number of clusters) from its marginal prior predictive distribution inferred from `params`. The parameter `n` is the number of observations in the model.
+"""
+function sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int}
+	# Input validation
+	if n < 1 
+		throw(ArgumentError("n must be a positive integer."))
+	end
+	if numsamples < 1
+		throw(ArgumentError("numsamples must be a positive integer."))
+	end
+	samples = Vector{Int}(undef, numsamples)
+	rdist = Gamma(params.η, 1/params.σ)
+	pdist = Beta(params.u, params.v)
+	K = 1:(n-1)
+	logprobs = zeros(n)
+	@inbounds for i = 1:numsamples
+		r = rand(rdist)
+		p = rand(pdist)
+		@. logprobs[1:(n-1)] = (r*K) * log(1-p) + (n-K)* log(p) - log(n-K) - logbeta(r*K, n-K)
+		logprobs[n] = r*n * log(1-p)
+		samples[i] = sample_logweights(logprobs)
+	end
+	return samples
 end
 
 function detectknee(
