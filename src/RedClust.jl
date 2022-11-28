@@ -4,6 +4,7 @@ export
 # fit prior
 fitprior, 
 sampledist,
+sampleK,
 
 # MCMC sampler
 runsampler,

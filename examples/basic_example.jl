@@ -8,23 +8,7 @@ guidefontsize = 16,
 tickfontsize = 16, 
 colorbar_tickfontsize = 16, 
 legend_font_pointsize = 16)
-
-# Define convenience functions for plotting
-function sqmatrixplot(X::Matrix, size_px = (500, 400); kwargs...)
-    M, N = size(X)
-    heatmap(
-        X, 
-        aspect_ratio=:equal, 
-        c=:Blues, 
-        xlim=(0,M), ylim=(0,N), 
-        size = size_px;
-        kwargs...)
-end
-
-function integer_histogram(X; kwargs...)
-    histogram(X, linewidth = 0, opacity = 0.7, legend = false, bins = minimum(X):maximum(X); kwargs...)
-end
-    
+include("utils_for_examples.jl")    
 
 ########## Generate data ##########
 seed!(44)
@@ -63,7 +47,7 @@ density(Ksamples, xlabel = "K", ylabel = "Density", linewidth = 2, legend = fals
 
 ############### MCMC ##############
 # MCMC options
-options = MCMCOptionsList(numiters=5000)
+options = MCMCOptionsList(numiters=40000, numMH = 0)
 data = MCMCData(points)
 # Run the sampler
 result = runsampler(data, options, params)
@@ -73,16 +57,20 @@ pointestimate, index = getpointestimate(result; loss = "binder", method="MAP")
 # Summary of point estimate
 summarise(pointestimate, clusts)
 # Posterior coclustering matrix
-sqmatrixplot(result.posterior_coclustering)
+sqmatrixplot(combine_sqmatrices(result.posterior_coclustering, oracle_coclustering), 
+title="Posterior vs Oracle Coclustering Probabilities")
 # Point-estimate adjacency matrix
-sqmatrixplot(adjacencymatrix(pointestimate))
+sqmatrixplot(combine_sqmatrices(adjacencymatrix(pointestimate), adjacencymatrix(clusts)), 
+title = "True Clustering vs MAP Point Estimate")
 # Posterior distribution of K
-integer_histogram(result.K, xlabel = "K", ylabel = "Frequency", 
-size = (600, 400), title = "Posterior Distribution of K")
+histogram_pmf(result.K, xlabel = "K", ylabel = "PMF", 
+size = (400, 400), title = "Posterior Distribution of K")
 # Posterior distribution of r
-histogram(result.r, opacity = 0.7, linewidth = 0, legend = false, ylabel = "Frequency", xlabel = "r", title = "Posterior Distribution of r")
+histogram(result.r, opacity = 0.7, linewidth = 0, label="Empirical density", ylabel = "Density", xlabel = "r", normalize = :pdf, title = "Posterior Distribution of r")
+density!(result.r, color=:black, linewidth = 2, linestyle=:dash, label="Kernel estimate", legend_font_pointsize=12)
 # Posterior distribution of p
-histogram(result.p, opacity = 0.7, linewidth = 0, legend = false, ylabel = "Frequency", xlabel = "p", title = "Posterior Distribution of p")
+histogram(result.p, opacity = 0.7, linewidth = 0, ylabel = "Density", xlabel = "p", normalize = :pdf, title = "Posterior Distribution of p", label = "Empirical density")
+density!(result.p, color=:black, linewidth = 2, linestyle=:dash, label = "Kernel estimate", legend_font_pointsize=12)
 # Log-likelihood
 plot(result.loglik, legend = false, xlabel = "Iteration", ylabel = "Log likelihood", title = "Log-Likelihood Trace Plot")
 # Log-posterior

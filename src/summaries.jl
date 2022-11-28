@@ -30,7 +30,7 @@ end
     printoutput = true) -> String
 Prints a summary of the clustering accuracy of `clusts` with respect to the ground truth in `truth`. The output is printed to the output stream `io`, which defaults to `stdout` if not provided.
 """
-function summarise(io::IO, clusts::ClustLabelVector, truth::ClustLabelVector)::String
+function summarise(io::IO, clusts::ClustLabelVector, truth::ClustLabelVector)
     temp = evaluateclustering(clusts, truth)
     printstyled(io, "Clustering summary\n"; color = :green, bold = true)
     println(io, "Number of clusters : $(length(unique(clusts)))")
@@ -41,6 +41,6 @@ function summarise(io::IO, clusts::ClustLabelVector, truth::ClustLabelVector)::S
     println(io, "Normalised Mutual Information : $(temp.nmi)")
 end
 
-function summarise(clusts::ClustLabelVector, truth::ClustLabelVector)::String
+function summarise(clusts::ClustLabelVector, truth::ClustLabelVector)
     summarise(stdout, clusts, truth)
 end

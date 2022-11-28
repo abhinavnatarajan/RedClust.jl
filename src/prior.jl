@@ -3,6 +3,7 @@ using Distances: pairwise, Euclidean
 using Distributions: fit_mle, Gamma, shape, rate, Distributions, Beta
 using ProgressBars: ProgressBar
 using StatsBase: counts, std
+using SpecialFunctions: logbeta
 
 """
     fitprior(data, algo, diss = false; 
