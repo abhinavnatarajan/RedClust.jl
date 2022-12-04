@@ -62,7 +62,7 @@ function Base.show(io::IO, ::MIME"text/plain", options::MCMCOptionsList)
     println(io, "$(options.burnin) burnin iteration$(options.burnin != 1 ? "s" : "")")
     println(io, "$(options.numsamples) sample$(options.numsamples != 1 ? "s" : "")")
     println(io, "$(options.numGibbs) restricted Gibbs step$(options.numGibbs != 1 ? "s" : "") per split-merge step")
-    print(io, "$(options.numMH) split-merge step$(options.numMH != 1 ? "s" : "") per iteration")
+    println(io, "$(options.numMH) split-merge step$(options.numMH != 1 ? "s" : "") per iteration")
 end
 
 @doc raw"""
@@ -124,7 +124,7 @@ function Base.show(io::IO, ::MIME"text/plain", params::PriorHyperparamsList)
     println(io, "Proposal standard deviation for sampling r = $(prettynumber(params.proposalsd_r))")
     println(io, "Repulsion is enabled? $(params.repulsion)")
     println(io, "Maximum number of clusters = $(params.maxK > 0 ? params.maxK : "none")")
-    print(io, "Initial number of clusters = $(params.K_initial)")
+    println(io, "Initial number of clusters = $(params.K_initial)")
 end
 
 Base.@kwdef mutable struct MCMCState
@@ -162,7 +162,7 @@ end
 
 function Base.show(io::IO, data::MCMCData)
     printstyled(io, "MCMC data : "; color = :green, bold = true)
-    print(io, "$(size(data.D, 1))×$(size(data.D, 1)) dissimilarity matrix.")
+    println(io, "$(size(data.D, 1))×$(size(data.D, 1)) dissimilarity matrix.")
 end
 
 """
@@ -278,9 +278,9 @@ function Base.show(io::IO, ::MIME"text/plain", result::MCMCResult)
     println(io, "ESS : $(prettynumber(result.p_ess))")
     println(io, "ESS per sample : $(prettynumber(result.p_ess / result.options.numsamples))")
     println(io, "Posterior mean : $(prettynumber(result.p_mean))")
-    print(io, "Posterior variance : $(prettynumber(result.p_variance))")
+    println(io, "Posterior variance : $(prettynumber(result.p_variance))")
 end
 
 function Base.show(io::IO, result::MCMCResult)
-    print(io, "MCMC result with $(result.options.numsamples) samples")
+    println(io, "MCMC result with $(result.options.numsamples) samples")
 end
