@@ -79,6 +79,6 @@ include("./prior.jl")
 include("./mcmc.jl")
 include("./pointestimate.jl")
 include("./summaries.jl")
-# include("./example_data.jl")
+include("./example_data.jl")
 
 end

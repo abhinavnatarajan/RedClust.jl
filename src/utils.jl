@@ -1,14 +1,14 @@
 using Distributions: Dirichlet, MvNormal, pdf
 using LinearAlgebra: I
 using LoopVectorization: @turbo
-using Random: rand
+using Random: rand, AbstractRNG, TaskLocalRNG, seed!
 using StatsBase: autocor, wsample, levelsmap, mean
 using Printf: @sprintf
 using Dates
 
 # use the Gumbel-max trick to sample from a vector of discrete log-probabilities
 @inline function sample_logweights(logprobs::AbstractVector{Float64})::Int
-	logprobs .-= minimum(logprobs)
+    logprobs .-= minimum(logprobs)
     u = rand(Uniform(), length(logprobs))
     argmax(-log.(-log.(u)) .+ logprobs)
 end
@@ -56,8 +56,8 @@ end
 function uppertriangle(
     M::Matrix{T}
     )::Vector{T} where {T}
-	n = size(M, 1)
-	[M[i, j] for i in 1:n for j in (i + 1):n]
+    n = size(M, 1)
+    [M[i, j] for i in 1:n for j in (i + 1):n]
 end
 
 """
@@ -67,7 +67,7 @@ Returns the `n`×`n` adjacency matrix corresponding to the given cluster label v
 function adjacencymatrix(
     clusts::ClustLabelVector
     )::Matrix{Bool}
-	clusts .== clusts'
+    clusts .== clusts'
 end
 
 """
@@ -95,7 +95,7 @@ Generates a multivariate Normal mixture, with kernel weights generated from a Di
 - `dim::Integer = K`: dimension of the observations.
 - `radius::Float64 = 1`: radius of the simplex whose vertices are the kernel means.
 - `σ::Float64 = 0.1 `: variance of each kernel.
-- `rng::AbstractRNG = TaskLocalRNG()`: a random number generator to use. If not provided, the default RNG provided by the Random.jl package will be used. 
+- `rng`: a random number generator to use, or an integer to seed the default random number generator with. If not provided, the default RNG provided by the Random.jl package will be used with default seeding.
 
 # Returns
 Named tuple containing the following fields-
@@ -106,7 +106,7 @@ Named tuple containing the following fields-
 - `probs::Float64`: vector of `K` cluster weights generated from the Dirichlet prior, used to generate the observations.
 - `oracle_coclustering::Matrix{Float64}`: `N`×`N` matrix of co-clustering probabilities, calculated assuming full knowledge of the cluster centres and cluster weights.
 """
-function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, radius::Real = 1, σ::Real = 0.1)
+function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, radius::Real = 1, σ::Real = 0.1, rng::Union{AbstractRNG, <:Integer} = TaskLocalRNG())
     # input validation 
     N < 1 && throw(ArgumentError("N must be greater than 1."))
     (K < 1 || K > N) && throw(ArgumentError("K must satisfy 1 ≤ K ≤ N."))
@@ -114,29 +114,32 @@ function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, ra
     dim < K && throw(ArgumentError("dim must be ≥ K."))
     radius ≤ 0 && throw(ArgumentError("radius must be positive."))
     σ ≤ 0 && throw(ArgumentError("σ must be positive."))
-
-    probs = rand(Dirichlet(K, α))
-    clusts = sort(wsample(1:K, probs, N))
-
-	# generate cluster centres
-	clust_centres = fill(zeros(dim), K)
-	for i = 1:K
-		clust_centres[i] = cat(zeros(i - 1), radius, zeros(dim - i); dims = 1)
+    if rng isa Int
+        rng = seed!(rng)
     end
 
-	# generate points
+    probs = rand(rng, Dirichlet(K, α))
+    clusts = sort(wsample(rng, 1:K, probs, N))
+
+    # generate cluster centres
+    clust_centres = fill(zeros(dim), K)
+    for i = 1:K
+        clust_centres[i] = cat(zeros(i - 1), radius, zeros(dim - i); dims = 1)
+    end
+
+    # generate points
     Σ = σ^2 * I(dim)
-	pnts = fill(zeros(dim), N)
-	oracle_posterior = zeros(K, N)
-	for i = 1:N
-		pnts[i] = rand(MvNormal(clust_centres[clusts[i]], Σ))
-	end
+    pnts = fill(zeros(dim), N)
+    oracle_posterior = zeros(K, N)
+    for i = 1:N
+        pnts[i] = rand(rng, MvNormal(clust_centres[clusts[i]], Σ))
+    end
     # calculate oracle
-    numiters = 1000
+    numiters = 5000
     oracle_posterior = zeros(K, N)
     oracle_coclustering = zeros(N, N)
     for c in 1:numiters
-        tempprobs = rand(Dirichlet(K, α))
+        tempprobs = rand(rng, Dirichlet(K, α))
         for i = 1:N
             for j = 1:K
                 oracle_posterior[j, i] = tempprobs[j] * pdf(MvNormal(clust_centres[j], Σ), pnts[i])
@@ -146,7 +149,7 @@ function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, ra
         oracle_coclustering += oracle_posterior' * oracle_posterior
     end
     oracle_coclustering ./= numiters #oracle coclustering matrix
-	distM = [pnts[i][j] for i in 1:N, j in 1:dim]' |> 
+    distM = [pnts[i][j] for i in 1:N, j in 1:dim]' |> 
     (x -> pairwise(Euclidean(), x, dims = 2))
     return (points = pnts, distancematrix = distM, clusts = clusts, probs = probs, oracle_coclustering = oracle_coclustering)
 end

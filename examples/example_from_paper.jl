@@ -3,18 +3,15 @@ using Random: seed!
 using StatsBase: counts
 include("utils_for_examples.jl")
 
-########## Generate data ##########
+## Load data
+# Change example_dataset(1) to example_dataset(2) or example_dataset(3) for the other datasets
 begin
-    K = 10 # Number of clusters 
-    N = 100 # Number of points
-    data_σ = 0.25 # Variance of the normal kernel
-    data_dim = 10 # Data dimension
-    α = 10 # parameter for Dirichlet prior on cluster weights
-    rng = 44
-    data = generatemixture(N, K; 
-    α = α, σ = data_σ, dim = data_dim, rng)
-    points, distmatrix, clusts, probs, oracle_coclustering = data
+    data = RedClust.example_dataset(1)
+    points, distmatrix, clusts, probs, oracle_coclustering = data;
+    K = length(unique(clusts))
+    N = length(points)
 end
+
 # Plot the true adjacency matrix and oracle co-clustering matrices as heatmaps
 sqmatrixplot(adjacencymatrix(clusts), title = "Adjacency Matrix")
 sqmatrixplot(oracle_coclustering, title = "Oracle Coclustering Probabilities")
@@ -67,7 +64,7 @@ end
 # MCMC options
 begin
     options = MCMCOptionsList(
-        numiters=5000)
+        numiters=5000, numGibbs = 50)
     data = MCMCData(points)
 end
 

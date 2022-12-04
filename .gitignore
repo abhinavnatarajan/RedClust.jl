@@ -25,4 +25,4 @@ Manifest.toml
 
 ssh_keys
 docs/localmake.jl
-src/Plot.jl
+src/scratch.jl
