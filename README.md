@@ -1,12 +1,9 @@
 # RedClust
-*A Julia package for Bayesian clustering of high-dimensional data using pairwise dissimilarities and repulsion.*
 
 [![GitHub Workflow Status (master)][github-CI-img]][github-CI-url]
 [![License][license-img]][license-url]
 [![Latest release][release-img]][release-url]
 [![Code Coverage][codecov-img]][codecov-url]
-
-#codecov-url
 
 ## Documentation 
 
