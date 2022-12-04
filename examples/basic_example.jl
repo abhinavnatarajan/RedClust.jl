@@ -1,14 +1,7 @@
-using RedClust
+using RedClust, Plots, StatsPlots
 using Random: seed!
 using StatsBase: counts
-using Plots, StatsPlots
-theme(:ggplot2)
-default(fontfamily = "Computer Modern", 
-guidefontsize = 16, 
-tickfontsize = 16, 
-colorbar_tickfontsize = 16, 
-legend_font_pointsize = 16)
-include("utils_for_examples.jl")    
+include("utils_for_examples.jl")
 
 ########## Generate data ##########
 seed!(44)
@@ -47,7 +40,7 @@ density(Ksamples, xlabel = "K", ylabel = "Density", linewidth = 2, legend = fals
 
 ############### MCMC ##############
 # MCMC options
-options = MCMCOptionsList(numiters=40000, numMH = 0)
+options = MCMCOptionsList(numiters=5000, numMH = 0)
 data = MCMCData(points)
 # Run the sampler
 result = runsampler(data, options, params)

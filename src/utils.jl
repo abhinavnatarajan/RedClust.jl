@@ -82,20 +82,22 @@ function sortlabels(
 end
 
 """
-    generatemixture(N, K; α = K, dim = K, radius = 1, σ = 0.1)
+    generatemixture(N, K; [α, dim, radius, σ, rng])
 
 Generates a multivariate Normal mixture, with kernel weights generated from a Dirichlet prior. The kernels are centred at the vertices of a `dim`-dimensional simplex with edge length `radius`.
 
-# Arguments
+# Required Arguments
 - `N::Integer`: number of observations to generate.
 - `K::Integer`: number of mixture kernels.
+
+# Optional Arguments
 - `α::Float64 = K`: parameter for the Dirichlet prior.
 - `dim::Integer = K`: dimension of the observations.
 - `radius::Float64 = 1`: radius of the simplex whose vertices are the kernel means.
 - `σ::Float64 = 0.1 `: variance of each kernel.
+- `rng::AbstractRNG = TaskLocalRNG()`: a random number generator to use. If not provided, the default RNG provided by the Random.jl package will be used. 
 
 # Returns
-
 Named tuple containing the following fields-
 
 - `points::Vector{Vector{Float64}}`: a vector of `N` observations.

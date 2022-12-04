@@ -1,6 +1,13 @@
 using LinearAlgebra: triu, diagind
+# Set plotting defaults
+theme(:ggplot2)
+default(fontfamily = "Computer Modern", 
+guidefontsize = 16, 
+tickfontsize = 16, 
+colorbar_tickfontsize = 16, 
+legend_font_pointsize = 16)
 
-# Define convenience functions for plotting
+## Define convenience functions for plotting
 
 # Heatmap of square matrix
 function sqmatrixplot(X::Matrix; kwargs...)
@@ -19,6 +26,7 @@ function histogram_pmf(X::AbstractVector{<:Int}; kwargs...)
     bar(minimum(X):maximum(X), counts(X)./length(X), linewidth = 0, opacity = 0.7, legend = false; kwargs...)
 end
 
+# Combine two symmetric square matrices together into the upper and lower triangle of a square matrix
 function combine_sqmatrices(lower::Matrix, upper::Matrix, diagonal::String = "lower") 
     if size(lower)[1] != size(lower)[2]
         throw(ArgumentError("Argument `lower` must be square, has dimensions $(size(lower))."))
