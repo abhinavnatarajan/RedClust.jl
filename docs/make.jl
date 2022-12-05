@@ -1,6 +1,10 @@
-using Pkg
-Pkg.develop(Pkg.PackageSpec(pwd()))
-Pkg.instantiate()
+# This stuff is here only for local builds
+if isnothing(get(ENV, "CI", nothing)) # if we are local
+    using Pkg
+    Pkg.activate(@__DIR__)
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(@__DIR__, "..")))
+    Pkg.instantiate()
+end
 using RedClust, Documenter, Literate
 
 # Parse the basic example file
@@ -40,7 +44,7 @@ makedocs(;
     ),
     pages=[
     "Introduction" => "index.md",
-    "Example" => "example.md",
+    "Example" => joinpath("_generated", "example.md"),
     "Reference" => "reference.md",
     "Changelog" => "changelog.md"
     ]
