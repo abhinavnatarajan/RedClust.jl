@@ -38,7 +38,7 @@ makedocs(;
     ),
     pages=[
     "Introduction" => "index.md",
-    "Example" => joinpath("_generated", "basic_example.md"),
+    "Example" => joinpath(outputdir, "basic_example.md"),
     "Reference" => "reference.md",
     "Changelog" => "changelog.md"
     ]
