@@ -13,7 +13,7 @@ function preprocess_jl(content)
     return content
 end
 inputdir = joinpath(@__DIR__, "..", "examples")
-inputfile = joinpath(inputdir, "_basic_example.jl")
+inputfile = joinpath(inputdir, "basic_example.jl")
 outputdir = joinpath(@__DIR__, "src", "_generated")
 # Create the example file in the docs
 Literate.markdown(inputfile, outputdir; 

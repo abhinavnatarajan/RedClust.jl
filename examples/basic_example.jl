@@ -1,3 +1,4 @@
+#src # This file is meant to be parsed by Literate.jl. 
 #md # # Example
 # Here we demonstrate the usage of RedClust through an example. 
 #md # This example can be downloaded as a Julia script [here](./@__NAME__.jl).
