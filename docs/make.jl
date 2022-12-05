@@ -23,14 +23,13 @@ Literate.script(inputfile, outputdir;
 name = "basic_example", preprocess = preprocess_jl, keep_comments=true)
 
 # Build the documentation HTML pages
-Documenter.Writers.HTMLWriter.HTML(ansicolor = true)
 makedocs(;
     modules=[RedClust],
     authors="Abhinav Natarajan <abhinav.v.natarajan@gmail.com>",
     repo="https://github.com/abhinavnatarajan/RedClust.jl/blob/{commit}{path}#{line}",
     sitename="RedClust.jl",
     format=Documenter.HTML(;
-        prettyurls=get(ENV, "CI", "false") == "true",
+        prettyurls=get(ENV, "CI", nothing) == "true", # true if not a local build
         canonical="https://abhinavnatarajan.github.io/RedClust.jl",
         edit_link="main",
         assets=String[],
@@ -38,13 +37,14 @@ makedocs(;
     ),
     pages=[
     "Introduction" => "index.md",
-    "Example" => joinpath(outputdir, "basic_example.md"),
+    "Example" => joinpath("_generated", "basic_example.md"),
     "Reference" => "reference.md",
     "Changelog" => "changelog.md"
     ]
 )
-
-deploydocs(;
-    repo="github.com/abhinavnatarajan/RedClust.jl",
-    devbranch="master"
-)
+if get(ENV, "CI", nothing) == "true" # deploy if not a local build
+    deploydocs(;
+        repo="github.com/abhinavnatarajan/RedClust.jl",
+        devbranch="master"
+    )
+end
