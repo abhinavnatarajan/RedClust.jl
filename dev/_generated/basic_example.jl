@@ -165,7 +165,7 @@ end
 
 # Running the MCMC is straightforward. We set up the MCMC options using `MCMCOptionsList`.
 
-options = MCMCOptionsList(numiters=5000)
+options = MCMCOptionsList(numiters=50000)
 
 # We then set up the input data using `MCMCData`.
 
