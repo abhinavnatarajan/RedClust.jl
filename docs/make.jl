@@ -1,3 +1,6 @@
+using Pkg
+Pkg.develop(Pkg.PackageSpec(pwd()))
+Pkg.instantiate()
 using RedClust, Documenter, Literate
 
 # Parse the basic example file
@@ -17,10 +20,10 @@ inputfile = joinpath(inputdir, "basic_example.jl")
 outputdir = joinpath(@__DIR__, "src", "_generated")
 # Create the example file in the docs
 Literate.markdown(inputfile, outputdir; 
-name = "basic_example", preprocess = preprocess_md)
+name = "example", preprocess = preprocess_md)
 # Create the actual example file
 Literate.script(inputfile, outputdir; 
-name = "basic_example", preprocess = preprocess_jl, keep_comments=true)
+name = "example", preprocess = preprocess_jl, keep_comments=true)
 
 # Build the documentation HTML pages
 makedocs(;
@@ -31,13 +34,13 @@ makedocs(;
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", nothing) == "true", # true if not a local build
         canonical="https://abhinavnatarajan.github.io/RedClust.jl",
-        edit_link="main",
+        edit_link="master",
         assets=String[],
         ansicolor=true
     ),
     pages=[
     "Introduction" => "index.md",
-    "Example" => joinpath("_generated", "basic_example.md"),
+    "Example" => "example.md",
     "Reference" => "reference.md",
     "Changelog" => "changelog.md"
     ]

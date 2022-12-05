@@ -1,0 +1,1 @@
+This file is here because we want to bypass Jekyll processing on GH-pages. Jekyll treats folders starting with an underscore as special resources and ignores them. We do not want this behaviour. Also, Documenter renders complete HTML files so we do not need post processing by Jekyll. 
