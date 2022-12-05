@@ -1,5 +1,5 @@
 const ClustLabelType = Int
-"Alias for Vector{Int}"
+"Alias for `Vector{Int}`"
 const ClustLabelVector = Vector{ClustLabelType}
 
 const _numGibbs_default = 5

@@ -8,6 +8,7 @@ using RedClust, Plots, StatsPlots
 using Random: seed!
 using StatsBase: counts
 using LinearAlgebra: triu, diagind
+nothing # hide
 
 #jl ## We define some colors optimized for color-blind individuals based on [this article](https://www.nature.com/articles/nmeth.1618) by Bang Wong in Nature. 
 #setup!

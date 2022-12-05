@@ -40,7 +40,7 @@ end
 @doc raw"""
     example_dataset(n::Int)
 
-Returns a named tuple containing the dataset from the n``^{\\text{th}}`` simulated example in the main paper. This dataset was generated using the following code in Julia v1.8.1:
+Returns a named tuple containing the dataset from the n``^{\mathrm{th}}`` simulated example in the main paper. This dataset was generated using the following code in Julia v1.8.1:
 ```julia
     using RedClust
     using Random: seed!
