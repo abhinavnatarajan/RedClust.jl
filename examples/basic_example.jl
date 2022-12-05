@@ -188,7 +188,7 @@ begin
     title = "Posterior Distribution of p", 
     label = "Empirical density", 
     legend_font_pointsize=12, 
-    legend_position = :best)
+    legend_position = :topleft)
     density!(result.p, color=:black, linewidth = 2, linestyle=:dash, 
     label = "Kernel estimate")
 end
