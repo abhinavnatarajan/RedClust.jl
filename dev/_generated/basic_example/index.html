@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Example · RedClust.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://abhinavnatarajan.github.io/RedClust.jl/_generated/basic_example/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">RedClust.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Introduction</a></li><li class="is-active"><a class="tocitem" href>Example</a><ul class="internal"><li><a class="tocitem" href="#Generating-Data"><span>Generating Data</span></a></li><li><a class="tocitem" href="#Prior-Hyperparameters"><span>Prior Hyperparameters</span></a></li><li><a class="tocitem" href="#Sampling"><span>Sampling</span></a></li><li><a class="tocitem" href="#MCMC-Result"><span>MCMC Result</span></a></li><li><a class="tocitem" href="#Point-Estimates"><span>Point Estimates</span></a></li></ul></li><li><a class="tocitem" href="../../reference/">Reference</a></li><li><a class="tocitem" href="../../changelog/">Changelog</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Example</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/abhinavnatarajan/RedClust.jl/blob/master/examples/basic_example.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h1><p>Here we demonstrate the usage of RedClust through an example. This example can be downloaded as a Julia script <a href="../basic_example.jl">here</a>. We begin by setting up the necessary includes.</p><pre><code class="language- hljs">using RedClust, Plots, StatsPlots
+using Random: seed!
+using StatsBase: counts
+using LinearAlgebra: triu, diagind</code></pre><p>Next we define some convenience functions for plotting.</p><pre><code class="language-julia hljs"># Heatmap of square matrix
+function sqmatrixplot(X::Matrix; kwargs...)
+    M, N = size(X)
+    heatmap(
+        X,
+        aspect_ratio=:equal,
+        color=:Blues,
+        xlim=(1,M), ylim=(1,N),
+        yflip = true, xmirror=true;
+        kwargs...)
+end
+
+# Histogram with integer bins
+function histogram_pmf(X::AbstractVector{&lt;:Integer}; kwargs...)
+    xvals = minimum(X):maximum(X)
+    yvals = counts(X)./length(X)
+    bar(xvals, yvals,
+    linewidth = 0,
+    legend = false,
+    xticks = xvals; kwargs...)
+end
+
+# Combine two symmetric square matrices together into the upper and lower triangle of a square matrix
+function combine_sqmatrices(lower::Matrix, upper::Matrix, diagonal::String = &quot;lower&quot;)
+    if size(lower)[1] != size(lower)[2]
+        throw(ArgumentError(&quot;Argument `lower` must be square, has dimensions $(size(lower)).&quot;))
+    end
+    if size(upper)[1] != size(upper)[2]
+        throw(ArgumentError(&quot;Argument `upper` must be a square matrix, has dimensions $(size(upper)).&quot;))
+    end
+    if !all(size(lower) .== size(upper))
+        throw(ArgumentError(&quot;Arguments `lower` and `upper` must have the same size.&quot;))
+    end
+    if !(eltype(lower) &lt;: eltype(upper)) &amp;&amp; !(eltype(upper) &lt;: eltype(lower))
+        throw(ArgumentError(&quot;Arguments must have compatible entries, got $(eltype(lower)) and $(eltype(upper)).&quot;))
+    end
+    if diagonal ∉ [&quot;lower&quot;, &quot;upper&quot;]
+        throw(ArgumentError(&quot;Keyword argument `diagonal` must be either \&quot;lower\&quot; or \&quot;upper\&quot;.&quot;))
+    end
+    result = copy(lower)
+    temp = trues(size(lower))
+    upper_idx = triu(temp, 1)
+    diagonal_idx = diagind(temp)
+    result[upper_idx] .= upper[upper_idx]
+    result[diagonal_idx] .= ((diagonal == &quot;lower&quot;) ? lower : upper)[diagonal_idx]
+    return result
+end</code></pre><h2 id="Generating-Data"><a class="docs-heading-anchor" href="#Generating-Data">Generating Data</a><a id="Generating-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-Data" title="Permalink"></a></h2><p>We can generate some example data using the function <a href="../../reference/#RedClust.generatemixture-Tuple{Integer, Integer}"><code>generatemixture</code></a>.</p><pre><code class="language-julia hljs">begin
+    K = 10 # Number of clusters
+    N = 100 # Number of points
+    data_σ = 0.25 # Variance of the normal kernel
+    data_dim = 10 # Data dimension
+    α = 10 # parameter for Dirichlet prior on cluster weights
+    data = generatemixture(N, K;
+    α = α, σ = data_σ, dim = data_dim)
+    points, distmatrix, clusts, probs, oracle_coclustering = data
+end</code></pre><p>Alternatively, the function <a href="../../reference/#RedClust.example_dataset-Tuple{Int64}"><code>example_dataset</code></a> can be used to retrieve the datasets used in the original RedClust paper.</p><pre><code class="language-julia hljs">begin
+    data = example_dataset(1)
+    points, distmatrix, clusts, probs, oracle_coclustering = data
+end</code></pre><p>We can visualise the true adjacency matrix of the observations with respect to the true clusters that they were drawn from.</p><pre><code class="language- hljs">sqmatrixplot(adjacencymatrix(clusts), title = &quot;Adjacency Matrix&quot;)</code></pre><p>We can visualise the oracle co-clustering matrix. This matrix is the matrix of co-clustering probabilities of the observations conditioned upon the data generation process. This takes into account full information about the cluster weights (and how they are generated), the mixture kernels for each cluster, and the location and scale parameters for these kernels.</p><pre><code class="language- hljs">sqmatrixplot(oracle_coclustering, title = &quot;Oracle Coclustering Probabilities&quot;)</code></pre><p>We can visualise the distance matrix of the observations.</p><pre><code class="language- hljs">sqmatrixplot(distmatrix)</code></pre><p>We can also plot the histogram of distances, grouped by whether they are inter-cluster distances (ICD) or within-cluster distances (WCD).</p><pre><code class="language- hljs">begin
+    empirical_intracluster = uppertriangle(distmatrix)[
+        uppertriangle(adjacencymatrix(clusts)) .== 1]
+    empirical_intercluster = uppertriangle(distmatrix)[
+        uppertriangle(adjacencymatrix(clusts)) .== 0]
+    histogram(empirical_intercluster,
+    bins = minimum(empirical_intercluster):0.05:maximum(empirical_intercluster),
+    label=&quot;ICD&quot;, xlabel = &quot;Distance&quot;, ylabel=&quot;Frequency&quot;,
+    title = &quot;Observed distribution of distances&quot;)
+    histogram!(empirical_intracluster,
+    bins = minimum(empirical_intracluster):0.05:maximum(empirical_intracluster),
+    label=&quot;WCD&quot;)
+end</code></pre><h2 id="Prior-Hyperparameters"><a class="docs-heading-anchor" href="#Prior-Hyperparameters">Prior Hyperparameters</a><a id="Prior-Hyperparameters-1"></a><a class="docs-heading-anchor-permalink" href="#Prior-Hyperparameters" title="Permalink"></a></h2><p>RedClust includes the function <a href="../../reference/#RedClust.fitprior"><code>fitprior</code></a> to heuristically choose prior hyperparameters based on the data.</p><pre><code class="language-julia hljs">params = fitprior(points, &quot;k-means&quot;, false)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">Model Hyperparameters</span></span>
+<span class="sgr35"><span class="sgr1">Likelihood Hyperparameters</span></span>
+δ₁ = 13.969
+δ₂ = 28.440
+α = 7291.612
+β = 611.359
+ζ = 125933.704
+γ = 7957.184
+<span class="sgr35"><span class="sgr1">Partition Prior Hyperparameters</span></span>
+η = 6.173
+σ = 1.451
+u = 17.860
+v = 7.271
+<span class="sgr35"><span class="sgr1">Miscellaneous Hyperparameters</span></span>
+Proposal standard deviation for sampling r = 1.710
+Repulsion is enabled? true
+Maximum number of clusters = none
+Initial number of clusters = 9
+</code></pre><p>We can check how good the chosen prior hyperparameters are by comparing the empirical distribution of distances to the predictive distribution based on the prior.</p><pre><code class="language- hljs">begin
+    pred_intracluster = sampledist(params, &quot;intracluster&quot;, 10000)
+    pred_intercluster = sampledist(params, &quot;intercluster&quot;, 10000)
+    density(pred_intracluster,
+    label=&quot;Simulated WCD&quot;, xlabel = &quot;Distance&quot;, ylabel = &quot;Density&quot;,
+    size = (700, 500),
+    linewidth = 2, linestyle = :dash)
+    density!(empirical_intracluster,
+    label=&quot;Empirical WCD&quot;,
+    linewidth = 2, primary = false)
+    density!(pred_intercluster,
+    label=&quot;Simulated ICD&quot;,
+    linewidth = 2, linestyle = :dash)
+    density!(empirical_intercluster,
+    label=&quot;Empirical ICD&quot;,
+    linewidth = 2, primary = false)
+end</code></pre><p>We can also evaluate the prior hyperparameters by checking the marginal predictive distribution on <span>$K$</span> (the number of clusters).</p><pre><code class="language- hljs">begin
+    Ksamples = sampleK(params, 10000, N)
+    density(Ksamples, linewidth = 2, legend = false,
+    xlabel = &quot;K&quot;, ylabel = &quot;Density&quot;, title = &quot;Marginal Prior Predictive Density of K&quot;)
+end</code></pre><h2 id="Sampling"><a class="docs-heading-anchor" href="#Sampling">Sampling</a><a id="Sampling-1"></a><a class="docs-heading-anchor-permalink" href="#Sampling" title="Permalink"></a></h2><p>Running the MCMC is straightforward. We set up the MCMC options using <a href="../../reference/#RedClust.MCMCOptionsList"><code>MCMCOptionsList</code></a>.</p><pre><code class="language-julia hljs">options = MCMCOptionsList(numiters=5000)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">MCMC Options</span></span>
+5000 iterations
+1000 burnin iterations
+4000 samples
+5 restricted Gibbs steps per split-merge step
+1 split-merge step per iteration
+</code></pre><p>We then set up the input data using <a href="../../reference/#RedClust.MCMCData"><code>MCMCData</code></a>.</p><pre><code class="language-julia hljs">data = MCMCData(points)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">MCMC data : </span></span>100×100 dissimilarity matrix.
+</code></pre><p>We can then run the sampler using <a href="../../reference/#RedClust.runsampler"><code>runsampler</code></a>.</p><pre><code class="language-julia hljs">result = runsampler(data, options, params)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">MCMC Summary</span></span>
+<span class="sgr35"><span class="sgr1">General</span></span>
+5000 iterations
+1000 iterations discarded as burnin
+4000 samples
+5 restricted Gibbs steps per split-merge step
+1 split-merge step per iteration
+Acceptance rate for split-merge steps = 8.000e-04
+Acceptance rate for sampling r = 3.998e-01
+Runtime = 11.59 s
+Time per iteration : 2.32 ms
+
+<span class="sgr35"><span class="sgr1">Summary for K</span></span>
+IAC : 8.069
+ESS : 495.736
+ESS per sample : 1.239e-01
+Posterior mean : 11.851
+Posterior variance : 6.276e-01
+
+<span class="sgr35"><span class="sgr1">Summary for r</span></span>
+IAC : 21.149
+ESS : 189.131
+ESS per sample : 4.728e-02
+Posterior mean : 3.673
+Posterior variance : 1.389
+
+<span class="sgr35"><span class="sgr1">Summary for p</span></span>
+IAC : 15.922
+ESS : 251.232
+ESS per sample : 6.281e-02
+Posterior mean : 6.816e-01
+Posterior variance : 4.325e-03
+</code></pre><h2 id="MCMC-Result"><a class="docs-heading-anchor" href="#MCMC-Result">MCMC Result</a><a id="MCMC-Result-1"></a><a class="docs-heading-anchor-permalink" href="#MCMC-Result" title="Permalink"></a></h2><p>The MCMC result contains several details about the MCMC, including acceptance rate, runtime, and convergence diagnostics. For full details see <a href="../../reference/#RedClust.MCMCResult"><code>MCMCResult</code></a>. In this example we have the ground truth cluster labels, so we can evaluate the result. For example, we can compare the posterior coclustering matrix to the oracle co-clustering probabilities.</p><pre><code class="language- hljs">sqmatrixplot(combine_sqmatrices(result.posterior_coclustering, oracle_coclustering),
+title=&quot;Posterior vs Oracle Coclustering Probabilities&quot;)</code></pre><p>Plot the posterior distribution of K:</p><pre><code class="language- hljs">histogram_pmf(result.K, xlabel = &quot;K&quot;, ylabel = &quot;PMF&quot;,
+size = (400, 400), title = &quot;Posterior Distribution of K&quot;)</code></pre><p>Plot the posterior distribution of r:</p><pre><code class="language- hljs">begin
+    histogram(result.r, normalize = :pdf,
+    legend_font_pointsize=12,
+    label=&quot;Empirical density&quot;, ylabel = &quot;Density&quot;, xlabel = &quot;r&quot;,
+    title = &quot;Posterior Distribution of r&quot;)
+    density!(result.r,
+    color=:black, linewidth = 2, linestyle=:dash,
+    label=&quot;Kernel estimate&quot;, legend_font_pointsize=12)
+end</code></pre><p>Plot the posterior distribution of p:</p><pre><code class="language- hljs">begin
+    histogram(result.p, normalize = :pdf,
+    ylabel = &quot;Density&quot;, xlabel = &quot;p&quot;,
+    title = &quot;Posterior Distribution of p&quot;,
+    label = &quot;Empirical density&quot;, legend_font_pointsize=12)
+    density!(result.p, color=:black, linewidth = 2, linestyle=:dash,
+    label = &quot;Kernel estimate&quot;)
+end</code></pre><p>Check the trace plot of the log-likelihood to make sure the MCMC is moving well:</p><pre><code class="language- hljs">plot(result.loglik, legend = false, linewidth = 1,
+xlabel = &quot;Iteration&quot;, ylabel = &quot;Log likelihood&quot;,
+title = &quot;Log-Likelihood Trace Plot&quot;)</code></pre><p>Check the trace plot of the log-posterior:</p><pre><code class="language- hljs">plot(result.logposterior, legend = false, linewidth = 1,
+xlabel = &quot;Iteration&quot;, ylabel = &quot;Log posterior&quot;,
+title = &quot;Log-Posterior Trace Plot&quot;)</code></pre><h2 id="Point-Estimates"><a class="docs-heading-anchor" href="#Point-Estimates">Point Estimates</a><a id="Point-Estimates-1"></a><a class="docs-heading-anchor-permalink" href="#Point-Estimates" title="Permalink"></a></h2><p>The function <a href="../../reference/#RedClust.getpointestimate-Tuple{MCMCResult}"><code>getpointestimate</code></a> finds an optimal point estimate, based on some notion of optimality. For example, to get the maximum a posteriori estimate we can run the following.</p><pre><code class="language-julia hljs">pointestimate, index = getpointestimate(result; method=&quot;MAP&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">([1, 1, 1, 1, 1, 2, 1, 1, 1, 3  …  2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 122)</code></pre><p>We can compare the point-estimate to the true clustering through their adjacency matrices.</p><pre><code class="language- hljs">sqmatrixplot(combine_sqmatrices(adjacencymatrix(pointestimate), adjacencymatrix(clusts)),
+title = &quot;True Clustering vs MAP Point Estimate&quot;)</code></pre><p>We can check the accuracy of the point estimate in terms of clustering metrics.</p><pre><code class="language-julia hljs">summarise(pointestimate, clusts)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Clustering summary
+Number of clusters : 11
+Normalised Binder loss : 0.018787878787878787
+Adjusted Rand Index : 0.8901614115457571
+Normalised Variation of Information (NVI) distance : 0.07331078447804634
+Normalised Information Distance (NID) : 0.0407042226363267
+Normalised Mutual Information : 0.9265717122007049</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Introduction</a><a class="docs-footer-nextpage" href="../../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Monday 5 December 2022 05:20">Monday 5 December 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
