@@ -6,7 +6,7 @@ include("utils_for_examples.jl")
 ## Load data
 # Change example_dataset(1) to example_dataset(2) or example_dataset(3) for the other datasets
 begin
-    data = RedClust.example_dataset(1)
+    data = example_dataset(1)
     points, distmatrix, clusts, probs, oracle_coclustering = data;
     K = length(unique(clusts))
     N = length(points)
@@ -37,8 +37,8 @@ end
 params = fitprior(points, "k-means", false)
 # Plot Empirical vs prior predictive density of distances
 begin 
-    pred_intracluster = sampledist(params, 10000, "intracluster")
-    pred_intercluster = sampledist(params, 10000, "intercluster")
+    pred_intracluster = sampledist(params, "intracluster", 10000)
+    pred_intercluster = sampledist(params, "intercluster", 10000)
     density(pred_intracluster, 
     label="Simulated WCD", xlabel = "Distance", ylabel = "Density", 
     size = (700, 500), 

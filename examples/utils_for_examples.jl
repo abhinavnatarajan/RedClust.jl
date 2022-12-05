@@ -74,5 +74,3 @@ function combine_sqmatrices(lower::Matrix, upper::Matrix, diagonal::String = "lo
     result[diagonal_idx] .= ((diagonal == "lower") ? lower : upper)[diagonal_idx]
     return result
 end
-
-

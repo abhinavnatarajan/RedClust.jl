@@ -15,7 +15,7 @@ Computes a point estimate from a vector of samples of cluster allocations by sea
 - `loss`: Determines the loss function used for the `"MPEL"` method. Must be either be a string or a function. If specified as a string, must be one of `"binder"` (Binder loss), `"omARI"` (one minus the Adjusted Rand Index), `"VI"` (Variation of Information distance), or `"ID"` (Information Distance). If specified as a function, must have a method defined for `(x::Vector{Int}, y::Vector{Int}) -> Real`. 
 
 # Returns
-Returns a tuple `(clust, i)` where `clust` is a clustering in `samples` and `i` is its sample index. 
+Returns a tuple `(clust, i)` where `clust` is a clustering allocation in `samples` and `i` is its sample index. 
 """
 function getpointestimate(samples::MCMCResult; method::String = "MAP", loss::Union{String, Function} = "VI")::Tuple{ClustLabelVector, Int}
     # input validation

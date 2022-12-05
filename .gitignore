@@ -23,6 +23,8 @@ docs/site/
 # environment.
 Manifest.toml
 
-ssh_keys
-docs/localmake.jl
-src/scratch.jl
+# Scratch
+.scratch/
+
+# File and folder names starting with _
+_*

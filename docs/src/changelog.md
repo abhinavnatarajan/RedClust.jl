@@ -3,9 +3,11 @@
 ## [1.0.0]
 
 ### Added
-- examples from the main paper are now included in the examples folder. 
+- examples from the main paper are now included in the examples folder. Data from the original paper is included in the data folder in the standard HDF5 format. 
 - the examples now have more plots.
 - functionality to sample the distances from the prior predictive distribution (see [`sampledist`](@ref)).
+- functionality to sample ``K`` from its marginal prior predictive (see [`sampleK`](@ref)).
+- [`generatemixture`](@ref) accepts a random number generator or a seed for the default RNG for reproducibility of results. 
 
 ### Removed 
 - dependency on RCall and the various calls to the salso algorithm were removed. It is left to the user to make these calls if necessary. 

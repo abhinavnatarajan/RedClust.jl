@@ -31,7 +31,7 @@ const datafilename = joinpath(@__DIR__, "..", "data", "example_datasets.h5")
 # save_example_data()
 
 """
-Return a read-only handle to a HDF5 file that contains example datasets from the main paper (see the introduction in the documentation for a persistent link to the paper). You must remember to close the file once you are done reading from it. This function is provided for reproducibility purposes only; it is recommended to read the datasets via the convenience function [`example_dataset`](@ref). 
+Return a read-only handle to a HDF5 file that contains example datasets from the main paper. You must remember to close the file once you are done reading from it. This function is provided for reproducibility purposes only; it is recommended to read the datasets via the convenience function [`example_dataset`](@ref). 
 """
 function example_datasets()
     h5open(datafilename, "r")
@@ -40,7 +40,8 @@ end
 """
     example_dataset(n::Int)
 
-Returns a named tuple containing the dataset from the n``^\text{th}`` simulated example in the main paper. This dataset can also be generated using the following code in Julia v1.8.2:
+Returns a named tuple containing the dataset from the n``^{\\text{th}}`` simulated example in the main paper. This dataset was generated using the following code in Julia v1.8.1:
+
     using RedClust
     using Random: seed!
     seed!(44)
@@ -50,9 +51,9 @@ Returns a named tuple containing the dataset from the n``^\text{th}`` simulated 
     data_dim = [10, 50, 10][n] # Data dimension
     data = generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim);
 
-Note however that the above code may produce different results on different versions of Julia, even if they differ only by a minor version, because the random number generator in Julia is not guaranteed to be stable across versions. 
+Note however that the above code may produce different results on your computer because the random number generator in Julia is not meant for reproducible results across different computers, different versions of Julia, or different versions of the Random.jl package, even with appropriate seeding. Therefore the datasets have been included with this package, and it is recommended to access them via this function.
 
-See also [`generate_mixture`](@ref). 
+See also [`generatemixture`](@ref). 
 """
 function example_dataset(n::Int)
     if n ∉ [1, 2, 3]

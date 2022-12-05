@@ -135,11 +135,11 @@ function fitprior(
 end
 
 """
-	sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)::Vector{Float64}
+	sampledist(params::PriorHyperparamsList, type::String, numsamples = 1)::Vector{Float64}
 
-Generate a vector of `n` synthetic distances from the prior predictive distribution encapsulated in `params`. `type` must be either "intercluster" or "intracluster".
+Generate a vector of samples of length `numsamples` from the prior predictive distribution on the distances, as encapsulated in `params`. `type` must be either `"intercluster"` or `"intracluster"`.
 """
-function sampledist(params::PriorHyperparamsList, numsamples::Int, type::String)::Vector{Float64}
+function sampledist(params::PriorHyperparamsList, type::String, numsamples::Int = 1)::Vector{Float64}
 	# Input validation
 	if type ∉ ["intercluster", "intracluster"]
 		throw(ArgumentError("type must be either \"intercluster\" or \"intracluster\"."))
@@ -168,7 +168,7 @@ end
 """
 	sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int}
 
-Returns a vector of `numsamples` smmples of ``K`` (number of clusters) from its marginal prior predictive distribution inferred from `params`. The parameter `n` is the number of observations in the model.
+Returns a vector of length `numsamples` containing samples of ``K`` (number of clusters) generated from its marginal prior predictive distribution inferred from `params`. The parameter `n` is the number of observations in the model.
 """
 function sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int}
 	# Input validation

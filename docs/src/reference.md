@@ -28,6 +28,13 @@ Pages   = ["utils.jl"]
 Order = [:function]
 ```
 
+## Example datasets
+```@autodocs
+Modules = [RedClust]
+Pages = ["example_data.jl"]
+Order = [:function]
+```
+
 ## Types
 ```@autodocs
 Modules = [RedClust]

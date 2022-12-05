@@ -32,6 +32,7 @@ pointestimate, index = getpointestimate(result)
 summarise(result)
 summarise(pointestimate, clusts)
 ```
+A more elaborate example can be found in the [Example](@ref) section.
 
 ## Model
 RedClust implements the model described in Natarajan et al. (2022). The key features are-

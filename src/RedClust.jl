@@ -67,11 +67,11 @@ infodist,
 MCMCOptionsList, 
 PriorHyperparamsList, 
 MCMCData, 
-MCMCResult
+MCMCResult,
 
 # data
-# example_datasets, 
-# example_dataset
+example_datasets, 
+example_dataset
 
 include("./types.jl")
 include("./utils.jl")

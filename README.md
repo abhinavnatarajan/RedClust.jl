@@ -11,6 +11,8 @@
 [![Stable version documentation][docs-stable-img]][docs-stable-url]
 [![arxiv paper link][arxiv-img]][arxiv-url]
 
+Please see the detailed documentation above. 
+
 ## Introduction
 
 [RedClust](https://github.com/abhinavnatarajan/RedClust.jl) is a [Julia](https://julialang.org/) package for Bayesian clustering of high-dimensional Euclidean data using pairwise dissimilarities instead of the raw observations. It uses an MCMC sampler to generate posterior samples from the space of all possible clustering structures on the data. 
@@ -40,6 +42,7 @@ pointestimate, index = getpointestimate(result)
 # Summary of point estimate
 summarise(pointestimate, clusts)
 ```
+A more elaborate example can be found in the detailed documentation.
 
 ## Citing this package
 If you want to use this package in your work, please cite it as:
