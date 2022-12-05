@@ -35,6 +35,9 @@ guidefontsize = 16,
 tickfontsize = 16, 
 colorbar_tickfontsize = 16, 
 legend_font_pointsize = 16)
+
+# seed the default RNG so that documentation remains stable 
+seed!(44)
 #!setup
 
 # Next we define some convenience functions for plotting.
@@ -183,7 +186,9 @@ begin
     histogram(result.p, normalize = :pdf, 
     ylabel = "Density", xlabel = "p", 
     title = "Posterior Distribution of p", 
-    label = "Empirical density", legend_font_pointsize=12)
+    label = "Empirical density", 
+    legend_font_pointsize=12, 
+    legend_position = :best)
     density!(result.p, color=:black, linewidth = 2, linestyle=:dash, 
     label = "Kernel estimate")
 end
