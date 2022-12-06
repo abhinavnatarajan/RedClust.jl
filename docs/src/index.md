@@ -77,11 +77,6 @@ A clustering point-estimate ``\boldsymbol c^*`` can be determined in a number of
    1. A naive method is to restrict the search space to those clusterings visited by the MCMC sampler. This method is implemented in RedClust in the function [`getpointestimate`](@ref).
    2. A better method is the SALSO algorithm ([Dahl et al., 2022](#dahl)), implemented in the [R](https://www.r-project.org/) package [salso](https://CRAN.R-project.org/package=salso), which heuristically searches the space of all possible clusterings. You can use the [RCall](https://github.com/JuliaInterop/RCall.jl) package in Julia to make calls to the salso package in R if you have R and salso installed.  
 
-## Citing this package
-If you want to use this package in your work, please cite it as:
-
-Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2022. ‘Cohesion and Repulsion in Bayesian Distance Clustering’, arXiv [2107.05414](https://arxiv.org/abs/2107.05414).
-
 ## Bibliography
 ```@raw html
 <a id="betancourt"></a>
