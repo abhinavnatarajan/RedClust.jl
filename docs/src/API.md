@@ -1,4 +1,4 @@
-# Reference
+# Public API
 
 ## Main functions
 ```@autodocs
