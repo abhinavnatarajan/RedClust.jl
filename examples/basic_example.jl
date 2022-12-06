@@ -158,7 +158,13 @@ begin
 end
 #md # ## Sampling
 # Running the MCMC is straightforward. We set up the MCMC options using [`MCMCOptionsList`](@ref).
+#local!
+options = MCMCOptionsList(numiters=5000)
+#!local
+#CI!
 options = MCMCOptionsList(numiters=50000)
+#!CI
+
 # We then set up the input data using [`MCMCData`](@ref).
 data = MCMCData(points)
 # We can then run the sampler using [`runsampler`](@ref). 

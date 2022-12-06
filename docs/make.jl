@@ -65,9 +65,9 @@ makedocs(;
     pages = [
     "Introduction" => "index.md",
     "Example" => joinpath(genfolder, "example.md"),
-    "Funding" => "funding.md",
-    "Citation Information" => "cite.md",
-    "API" => "reference.md",
+    "Funding Information" => "funding.md",
+    "Cite This Package" => "cite.md",
+    "Public API" => "reference.md",
     "Changelog" => "changelog.md"
     ]
 )
