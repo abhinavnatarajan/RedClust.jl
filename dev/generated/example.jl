@@ -1,6 +1,4 @@
-# Here we demonstrate the usage of RedClust through an example.
-# We begin by setting up the necessary includes.
-
+# Here we demonstrate the usage of RedClust through an example.# We begin by setting up the necessary includes.
 using RedClust, Plots, StatsPlots
 using Random: seed!
 using StatsBase: counts
@@ -27,17 +25,17 @@ gridlinewidth = 1,
 framestyle = :box,
 linecolor = :match,
 linewidth = 0.5,
-guidefontsize = 16,
-tickfontsize = 16,
-colorbar_tickfontsize = 16,
-legend_font_pointsize = 16)
+guidefontsize = 14,
+tickfontsize = 12,
+colorbar_tickfontsize = 12,
+legend_font_pointsize = 12,
+plot_titlefontsize = 14
+)
 
 # seed the default RNG so that documentation remains stable
-
 seed!(44)
 
 # Next we define some convenience functions for plotting.
-
 # Heatmap of square matrix
 function sqmatrixplot(X::Matrix; kwargs...)
     M, N = size(X)
@@ -86,9 +84,7 @@ function combine_sqmatrices(lower::Matrix, upper::Matrix, diagonal::String = "lo
     return result
 end
 
-# ## Generating Data
-# We can generate some example data using the function `generatemixture`.
-
+# ## Generating Data# We can generate some example data using the function `generatemixture`.
 begin
     K = 10 # Number of clusters
     N = 100 # Number of points
@@ -101,26 +97,21 @@ begin
 end
 
 # Alternatively, the function `example_dataset` can be used to retrieve the datasets used in the original RedClust paper.
-
 begin
     data = example_dataset(1)
     points, distmatrix, clusts, probs, oracle_coclustering = data
 end
 
 # We can visualise the true adjacency matrix of the observations with respect to the true clusters that they were drawn from.
-
 sqmatrixplot(adjacencymatrix(clusts), title = "Adjacency Matrix")
 
 # We can visualise the oracle co-clustering matrix. This matrix is the matrix of co-clustering probabilities of the observations conditioned upon the data generation process. This takes into account full information about the cluster weights (and how they are generated), the mixture kernels for each cluster, and the location and scale parameters for these kernels.
-
 sqmatrixplot(oracle_coclustering, title = "Oracle Coclustering Probabilities")
 
 # We can visualise the distance matrix of the observations.
-
-sqmatrixplot(distmatrix)
+sqmatrixplot(distmatrix, title = "Matrix of Pairwise Distances")
 
 # We can also plot the histogram of distances, grouped by whether they are inter-cluster distances (ICD) or within-cluster distances (WCD).
-
 begin
     empirical_intracluster = uppertriangle(distmatrix)[
         uppertriangle(adjacencymatrix(clusts)) .== 1]
@@ -136,31 +127,28 @@ begin
 end
 
 # RedClust includes the function `fitprior` to heuristically choose prior hyperparameters based on the data.
-
 params = fitprior(points, "k-means", false)
 
-# We can check how good the chosen prior hyperparameters are by comparing the empirical distribution of distances to the predictive distribution based on the prior.
-
+# We can check how good the chosen prior hyperparameters are by comparing the empirical distribution of distances to the (marginal) prior predictive distribution.
 begin
     pred_intracluster = sampledist(params, "intracluster", 10000)
     pred_intercluster = sampledist(params, "intercluster", 10000)
     density(pred_intracluster,
     label="Simulated WCD", xlabel = "Distance", ylabel = "Density",
-    size = (700, 500),
     linewidth = 2, linestyle = :dash)
     density!(empirical_intracluster,
     label="Empirical WCD",
-    linewidth = 2, primary = false)
+    color = 1, linewidth = 2)
     density!(pred_intercluster,
     label="Simulated ICD",
-    linewidth = 2, linestyle = :dash)
+    linewidth = 2, linestyle = :dash, color = 2)
     density!(empirical_intercluster,
     label="Empirical ICD",
-    linewidth = 2, primary = false)
+    linewidth = 2, color = 2)
+    title!("Distances: Prior Predictive vs Empirical Distribution")
 end
 
 # We can also evaluate the prior hyperparameters by checking the marginal predictive distribution on ``K`` (the number of clusters).
-
 begin
     Ksamples = sampleK(params, 10000, N)
     density(Ksamples, linewidth = 2, legend = false,
@@ -168,29 +156,23 @@ begin
 end
 
 # Running the MCMC is straightforward. We set up the MCMC options using `MCMCOptionsList`.
-
 options = MCMCOptionsList(numiters=50000)
 
 # We then set up the input data using `MCMCData`.
-
 data = MCMCData(points)
 
 # We can then run the sampler using `runsampler`.
-
 result = runsampler(data, options, params)
 
 # The MCMC result contains several details about the MCMC, including acceptance rate, runtime, and convergence diagnostics. For full details see `MCMCResult`. In this example we have the ground truth cluster labels, so we can evaluate the result. For example, we can compare the posterior coclustering matrix to the oracle co-clustering probabilities.
-
 sqmatrixplot(combine_sqmatrices(result.posterior_coclustering, oracle_coclustering),
 title="Posterior vs Oracle Coclustering Probabilities")
 
 # Plot the posterior distribution of K:
-
-histogram_pmf(result.K, xlabel = "K", ylabel = "PMF",
-size = (400, 400), title = "Posterior Distribution of K")
+histogram_pmf(result.K,
+xlabel = "K", ylabel = "PMF", title = "Posterior Distribution of K")
 
 # Plot the posterior distribution of r:
-
 begin
     histogram(result.r, normalize = :pdf,
     legend_font_pointsize=12,
@@ -202,7 +184,6 @@ begin
 end
 
 # Plot the posterior distribution of p:
-
 begin
     histogram(result.p, normalize = :pdf,
     ylabel = "Density", xlabel = "p",
@@ -215,28 +196,23 @@ begin
 end
 
 # Check the trace plot of the log-likelihood to make sure the MCMC is moving well:
-
 plot(result.loglik, legend = false, linewidth = 1,
 xlabel = "Iteration", ylabel = "Log likelihood",
 title = "Log-Likelihood Trace Plot")
 
 # Check the trace plot of the log-posterior:
-
 plot(result.logposterior, legend = false, linewidth = 1,
 xlabel = "Iteration", ylabel = "Log posterior",
 title = "Log-Posterior Trace Plot")
 
 # The function `getpointestimate` finds an optimal point estimate, based on some notion of optimality. For example, to get the maximum a posteriori estimate we can run the following.
-
 pointestimate, index = getpointestimate(result; method="MAP")
 
 # We can compare the point-estimate to the true clustering through their adjacency matrices.
-
 sqmatrixplot(combine_sqmatrices(adjacencymatrix(pointestimate), adjacencymatrix(clusts)),
 title = "True Clustering vs MAP Point Estimate")
 
 # We can check the accuracy of the point estimate in terms of clustering metrics.
-
 summarise(pointestimate, clusts)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
