@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0]
+### Added
+- added function signature for [`sampleK`](@ref) to accept individual parameters.
+
+## [1.0.1]
+Documentation now updated to use Literate.jl to generate the example. 
+
 ## [1.0.0]
 
 ### Added

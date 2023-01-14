@@ -68,11 +68,12 @@ function fitprior(
 		input = dissM
 		clustfn = kmedoids
 	end
-
 	@inbounds for k in ProgressBar(1:(Kmax-Kmin+1), output_stream = ostream)
 		temp = clustfn(input, k; maxiter=1000)
 		objective[k] = temp.totalcost
-		!temp.converged && @warn "Clustering did not converge at K = $k"
+		if !temp.converged
+			@warn "Clustering did not converge at K = $k"
+		end		
 	end
 	elbow = detectknee(Kmin:Kmax, objective)[1]
 	K = elbow
@@ -167,10 +168,11 @@ end
 
 """
 	sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int}
+	sampleK(η::Real, σ::Real, u::Real, v::Real, numsamples::Int, n::Int)
 
 Returns a vector of length `numsamples` containing samples of ``K`` (number of clusters) generated from its marginal prior predictive distribution inferred from `params`. The parameter `n` is the number of observations in the model.
 """
-function sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int}
+function sampleK(η::Real, σ::Real, u::Real, v::Real, numsamples::Int, n::Int)
 	# Input validation
 	if n < 1 
 		throw(ArgumentError("n must be a positive integer."))
@@ -179,8 +181,8 @@ function sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{
 		throw(ArgumentError("numsamples must be a positive integer."))
 	end
 	samples = Vector{Int}(undef, numsamples)
-	rdist = Gamma(params.η, 1/params.σ)
-	pdist = Beta(params.u, params.v)
+	rdist = Gamma(η, 1/σ)
+	pdist = Beta(u, v)
 	K = 1:(n-1)
 	logprobs = zeros(n)
 	@inbounds for i = 1:numsamples
@@ -192,6 +194,7 @@ function sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{
 	end
 	return samples
 end
+sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int} = sampleK(params.η, params.σ, params.u, params.v, numsamples, n)
 
 function detectknee(
 	xvalues::AbstractVector{<:Real}, 
