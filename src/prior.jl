@@ -11,7 +11,7 @@ using SpecialFunctions: logbeta
 	Kmax = Int(floor(size(data)[end] / 2), 
 	verbose = true)
 
-Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
+Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids and the elbow method, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
 
 # Required Arguments
 - `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 
@@ -19,8 +19,8 @@ Determines the best prior hyperparameters from the data. A notional clustering i
 
 # Optional Arguments
 - `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
-- `Kmin::Integer`: minimum number of clusters.
-- `Kmax::Integer`: maximum number of clusters. If left unspecified, it is set to half the number of observations.
+- `Kmin::Integer`: minimum number of clusters to scan for the elbow method.  
+- `Kmax::Integer`: maximum number of clusters to scan for the elbow method. If left unspecified, it is set to half the number of observations.
 - `verbose::Bool`: if false, disables all info messages and progress bars. 
 
 # Returns
@@ -81,6 +81,17 @@ function fitprior(
 	A = uppertriangle(dissM)[uppertriangle(notionaladjmatrix) .== 1]
 	B = uppertriangle(dissM)[uppertriangle(notionaladjmatrix) .== 0]
 
+	# Compute partition prior parameters
+	println(ostream, "Computing partition prior hyperparameters.")
+	clustsizes = counts(notionalclustering)
+	temp = sample_rp(clustsizes; verbose = verbose)
+	proposalsd_r = std(temp.r)
+	fitr = fit_mle(Gamma, temp.r)
+	η = shape(fitr)
+	σ = rate(fitr)
+	fitp = fit_mle(Beta, temp.p)
+	u, v = Distributions.params(fitp)
+
 	# Compute likelihood parameters
 	println(ostream, "Computing likelihood hyperparameters.")
 	if K == N # A is empty
@@ -105,17 +116,6 @@ function fitprior(
 		ζ = length(B) * δ2
 		γ = sum(B)
 	end
-
-	# Compute partition prior parameters
-	println(ostream, "Computing partition prior hyperparameters.")
-	clustsizes = counts(notionalclustering)
-	temp = sample_rp(clustsizes; verbose = verbose)
-	proposalsd_r = std(temp.r)
-	fitr = fit_mle(Gamma, temp.r)
-	η = shape(fitr)
-	σ = rate(fitr)
-	fitp = fit_mle(Beta, temp.p)
-	u, v = Distributions.params(fitp)
 
 	params = PriorHyperparamsList(
 		δ1 = δ1,
