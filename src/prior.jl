@@ -32,7 +32,6 @@ function fitprior(
 	diss::Bool = false; 
 	Kmin::Integer = 1, 
 	Kmax::Integer = Int(floor(size(data)[end] / 2)),
-	useR::Bool = false, 
 	verbose::Bool = true 
 )
 	ostream = verbose ? stdout : devnull
@@ -117,6 +116,142 @@ function fitprior(
 		ζ = length(B) * δ2
 		γ = sum(B)
 	end
+
+	params = PriorHyperparamsList(
+		δ1 = δ1,
+		δ2 = δ2,
+		α = α,
+		β = β,
+		ζ = ζ,
+		γ = γ, 
+		η = η,
+		σ = σ,
+		proposalsd_r = proposalsd_r,
+		u = u, 
+		v = v,
+		K_initial = K
+	)
+	return params
+end
+
+@doc raw"""
+    fitprior2(data, algo, diss = false; 
+	Kmin = 1, 
+	Kmax = Int(floor(size(data)[end] / 2), 
+	verbose = true)
+
+Determines the best prior hyperparameters from the data. Uses the same method as [`fitprior`](@ref) to obtain values for ``\sigma``, ``\eta``, ``u``, and ``v``, but derives values for the cluster-specific parameters by considering within-cluster and cross-cluster distances over clusterings with ``K`` clusters for all values of ``K \in [K_\mathrm{min}, K_\mathrm{max}]``, weighted by the prior predictive distribution of ``K`` in that range.   
+
+# Required Arguments
+- `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 
+- `algo::String`: must be one of `"k-means"` or `"k-medoids"`.
+
+# Optional Arguments
+- `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
+- `Kmin::Integer`: minimum number of clusters to scan for the elbow method.  
+- `Kmax::Integer`: maximum number of clusters to scan for the elbow method. If left unspecified, it is set to half the number of observations.
+- `verbose::Bool`: if false, disables all info messages and progress bars. 
+
+# Returns
+An object of type [`PriorHyperparamsList`](@ref).
+"""
+function fitprior2(
+	data::Union{Vector{Vector{Float64}}, Matrix{Float64}},
+	algo::String, 
+	diss::Bool = false; 
+	Kmin::Integer = 1, 
+	Kmax::Integer = Int(floor(size(data)[end] / 2)),
+	verbose::Bool = true 
+)
+	ostream = verbose ? stdout : devnull
+	printstyled(ostream, "Fitting prior hyperparameters\n"; bold = true)
+	if data isa Vector{Vector{Float64}}
+		if diss
+			throw(ArgumentError("diss = true but data is not a dissimilarity matrix. Assuming that the data is a vector of observations."))
+		end
+		x = makematrix(data)
+		diss = false
+	else
+		x = data
+	end
+	N = size(x, 2)
+
+	diss ? println(ostream, "Input: pairwise dissimilarities between $N observations.") :
+		println(ostream, "Input: $N observations of dimension $(size(x, 1)).")
+
+	# Input validation
+	diss && size(x, 1) != size(x, 2) && throw(ArgumentError("Supplied dissimilarity matrix is not square."))
+	algo == "k-means" && diss && throw(ArgumentError("Cannot use algorithm `k-means` with a dissimilarity matrix."))
+	algo != "k-means" && algo != "k-medoids" && throw(ArgumentError("Algo must be 'k-means' or 'k-medoids'."))
+	!(1 ≤ Kmin && Kmin ≤ Kmax && Kmax ≤ N) && throw(ArgumentError("Kmin and Kmax must satisfy 1 ≤ Kmin ≤ Kmax ≤ N"))
+	dissM = diss ? x : pairwise(Euclidean(), x, dims = 2)
+
+	# Get notional clustering
+	println(ostream, "Computing notional clustering.")
+	objective = zeros(Float64, N)
+	if algo == "k-means"
+		clustfn = kmeans
+		input = x
+	elseif algo == "k-medoids"
+		input = dissM
+		clustfn = kmedoids
+	end
+	A = Vector{Float64}[]
+	B = Vector{Float64}[]
+	szA = zeros(Int, N)
+	szB = zeros(Int, N)
+	wtsA = Float64[]
+	wtsB = Float64[]
+	@inbounds for k in ProgressBar(1:N, output_stream = ostream)
+		temp = clustfn(input, k; maxiter=1000)
+		objective[k] = temp.totalcost
+		if !temp.converged
+			@warn "Clustering did not converge at K = $k"
+		end
+		tempadjmatrix = adjacencymatrix(temp.assignments)
+		tempA = uppertriangle(dissM)[uppertriangle(tempadjmatrix) .== 1]
+		push!(A, tempA)
+		szA[k] = length(tempA)
+		tempB = uppertriangle(dissM)[uppertriangle(tempadjmatrix) .== 0]
+		push!(B, tempB)
+		szB[k] = length(tempB)
+	end
+	elbow = detectknee(Kmin:Kmax, objective[Kmin:Kmax])[1]
+	K = elbow
+	notionalclustering = clustfn(input, K; maxiter=1000).assignments
+
+	# Compute partition prior parameters
+	println(ostream, "Computing partition prior hyperparameters.")
+	clustsizes = counts(notionalclustering)
+	temp = sample_rp(clustsizes; verbose = verbose)
+	proposalsd_r = std(temp.r)
+	fitr = fit_mle(Gamma, temp.r)
+	η = shape(fitr)
+	σ = rate(fitr)
+	fitp = fit_mle(Beta, temp.p)
+	u, v = Distributions.params(fitp)
+
+	# Generate prior on K 
+	Kprior = Float64.(counts(sampleK(η, σ, u, v, maximum([10000, 100 * N]), N)))
+	Kprior ./= sum(Kprior)
+	append!(Kprior, zeros(N - length(Kprior)))
+
+	# Compute likelihood parameters
+	println(ostream, "Computing likelihood hyperparameters.")
+	for k in Kmin:Kmax
+		append!(wtsA, fill(Kprior[k], szA[k]))
+		append!(wtsB, fill(Kprior[k], szB[k]))
+	end
+	A = reduce(append!, A[Kmin:Kmax])
+	B = reduce(append!, B[Kmin:Kmax])
+	fitA = fit_mle(Gamma, A, wtsA)
+	δ1 = shape(fitA)
+	α = sum(szA[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ1
+	β = sum(A .* wtsA)
+	fitB = fit_mle(Gamma, B, wtsB)
+	δ2 = shape(fitB) 
+	ζ = sum(szB[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ2
+	γ = sum(B .* wtsB)
 
 	params = PriorHyperparamsList(
 		δ1 = δ1,

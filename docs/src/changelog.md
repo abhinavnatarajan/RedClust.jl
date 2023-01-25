@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0]
+### Added
+- added function [`fitprior2`](@ref), alternative method to fit prior hyperparameters.
+- updated the basic_example file
+- added individual example files for each example shown in the paper, except for the numismatic example (for data privacy reasons).
+
 ## [1.1.0]
 ### Added
 - added function signature for [`sampleK`](@ref) to accept individual parameters.

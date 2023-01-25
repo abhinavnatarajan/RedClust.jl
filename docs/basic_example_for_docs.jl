@@ -2,6 +2,7 @@
 #md # # Example
 # Here we demonstrate the usage of RedClust through an example. 
 #md # This example can be downloaded as a Julia script [here](./@__NAME__.jl).
+
 # We begin by setting up the necessary includes. 
 
 using RedClust, Plots, StatsPlots
@@ -10,8 +11,8 @@ using StatsBase: counts
 using LinearAlgebra: triu, diagind
 nothing # hide
 
-#jl ## We define some colors optimized for color-blind individuals based on [this article](https://www.nature.com/articles/nmeth.1618) by Bang Wong in Nature. 
 #setup!
+#jl ## We define some colors optimized for color-blind individuals based on [this article](https://www.nature.com/articles/nmeth.1618) by Bang Wong in Nature. 
 function wong_colors(alpha = 1.0)
     colors = [
         RGB(0/255, 114/255, 178/255), # blue
@@ -111,11 +112,9 @@ begin
     points, distmatrix, clusts, probs, oracle_coclustering = data
     nothing # hide
 end
-# We can visualise the true adjacency matrix of the observations with respect to the true clusters that they were drawn from.
-sqmatrixplot(adjacencymatrix(clusts), title = "Adjacency Matrix")
-# We can visualise the oracle co-clustering matrix. This matrix is the matrix of co-clustering probabilities of the observations conditioned upon the data generation process. This takes into account full information about the cluster weights (and how they are generated), the mixture kernels for each cluster, and the location and scale parameters for these kernels. 
-sqmatrixplot(oracle_coclustering, title = "Oracle Coclustering Probabilities")
-# We can visualise the distance matrix of the observations.
+# We can visualise the true adjacency matrix of the observations with respect to the true clusters that they were drawn from, as well as the oracle coclustering matrix. The latter is the matrix of co-clustering probabilities of the observations conditioned upon the data generation process. This takes into account full information about the cluster weights (and how they are generated), the mixture kernels for each cluster, and the location and scale parameters for these kernels. 
+sqmatrixplot(combine_sqmatrices(oracle_coclustering, 1.0 * adjacencymatrix(clusts)), title = "Adjacency vs Oracle Co-clustering Probabilities \n(upper right and lower left triangle)\n")
+# We can visualise the matrix of pairwise distances between the observations.
 sqmatrixplot(distmatrix, title = "Matrix of Pairwise Distances")
 # We can also plot the histogram of distances, grouped by whether they are inter-cluster distances (ICD) or within-cluster distances (WCD).
 begin 
@@ -155,8 +154,9 @@ end
 # We can also evaluate the prior hyperparameters by checking the marginal predictive distribution on ``K`` (the number of clusters). 
 begin
     Ksamples = sampleK(params, 10000, N)
-    density(Ksamples, linewidth = 2, legend = false, 
-    xlabel = "K", ylabel = "Density", title = "Marginal Prior Predictive Density of K")
+    histogram_pmf(Ksamples, legend = false,
+    xticks=collect(0:10:maximum(Ksamples)),
+    xlabel = "\$K\$", ylabel = "Probability", title = "Marginal Prior Predictive Distribution of \$K\$")
 end
 #md # ## Sampling
 # Running the MCMC is straightforward. We set up the MCMC options using [`MCMCOptionsList`](@ref).
@@ -176,30 +176,43 @@ result = runsampler(data, options, params)
 # The MCMC result contains several details about the MCMC, including acceptance rate, runtime, and convergence diagnostics. For full details see [`MCMCResult`](@ref). In this example we have the ground truth cluster labels, so we can evaluate the result. For example, we can compare the posterior coclustering matrix to the oracle co-clustering probabilities.
 sqmatrixplot(combine_sqmatrices(result.posterior_coclustering, oracle_coclustering), 
 title="Posterior vs Oracle Coclustering Probabilities")
-# Plot the posterior distribution of K:
-histogram_pmf(result.K, 
-xlabel = "K", ylabel = "PMF", title = "Posterior Distribution of K")
-# Plot the posterior distribution of r:
+# Plot the posterior distribution of ``K``:
+histogram_pmf(result.K,
+xlabel = "\$K\$", ylabel = "Probability", title = "Posterior Distribution of \$K\$")
+# Plot the posterior distribution of ``r``:
 begin
     histogram(result.r, normalize = :pdf,
     legend_font_pointsize=12, 
-    label="Empirical density", ylabel = "Density", xlabel = "r", 
-    title = "Posterior Distribution of r")
+    label="Empirical density", ylabel = "Density", xlabel = "\$r\$", 
+    title = "Posterior Distribution of \$r\$")
     density!(result.r, 
     color=:black, linewidth = 2, linestyle=:dash, 
     label="Kernel estimate", legend_font_pointsize=12)
 end
-# Plot the posterior distribution of p:
+# Plot the posterior distribution of ``p``:
 begin
-    histogram(result.p, normalize = :pdf, 
-    ylabel = "Density", xlabel = "p", 
-    title = "Posterior Distribution of p", 
-    label = "Empirical density", 
-    legend_font_pointsize=12, 
+    histogram(result.p, normalize = :pdf,
+    ylabel = "Density", xlabel = "\$p\$",
+    title = "Posterior Distribution of \$p\$",
+    label = "Empirical density",
+    legend_font_pointsize=12,
     legend_position = :topleft)
-    density!(result.p, color=:black, linewidth = 2, linestyle=:dash, 
+    density!(result.p, color=:black, linewidth = 2, linestyle=:dash,
     label = "Kernel estimate")
 end
+#md # ## Convergence statistics
+# Plot the traceplot of the autocorrelation function of ``K``:
+plot(result.K_acf, legend = false, linewidth = 1, 
+xlabel = "Lag", ylabel = "Autocorrelation", 
+title = "Autocorrelation Function of \$K\$")
+# Plot the traceplot of the autocorrelation function of ``r``:
+plot(result.r_acf, legend = false, linewidth = 1, 
+xlabel = "Lag", ylabel = "Autocorrelation", 
+title = "Autocorrelation Function of \$r\$")
+# Plot the traceplot of the autocorrelation function of ``p``:
+plot(result.p_acf, legend = false, linewidth = 1, 
+xlabel = "Lag", ylabel = "Autocorrelation", 
+title = "Autocorrelation Function of \$p\$")
 # Check the trace plot of the log-likelihood to make sure the MCMC is moving well:
 plot(result.loglik, legend = false, linewidth = 1,
 xlabel = "Iteration", ylabel = "Log likelihood", 

@@ -14,6 +14,7 @@ module RedClust
 export 
 # fit prior
 fitprior, 
+fitprior2,
 sampledist,
 sampleK,
 

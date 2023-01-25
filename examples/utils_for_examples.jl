@@ -1,7 +1,7 @@
 using LinearAlgebra: triu, diagind
 # Set plotting defaults
 
-# Wong colors borrowed from Makie implementation
+# We define some colors optimized for color-blind individuals based on [this article](https://www.nature.com/articles/nmeth.1618) by Bang Wong in Nature.
 function wong_colors(alpha = 1.0)
     colors = [
         RGB(0/255, 114/255, 178/255), # blue
@@ -14,27 +14,30 @@ function wong_colors(alpha = 1.0)
     ]
     @. RGBA{Float32}(red(colors), green(colors), blue(colors), alpha)
 end
+
+# Set plotting defaults
 default(fontfamily = "Computer Modern",
-color_palette = wong_colors(0.8), 
+color_palette = wong_colors(0.8),
 gridlinewidth = 1,
 framestyle = :box,
 linecolor = :match,
 linewidth = 0.5,
-guidefontsize = 16, 
-tickfontsize = 16, 
-colorbar_tickfontsize = 16, 
-legend_font_pointsize = 16)
+guidefontsize = 14,
+tickfontsize = 12,
+colorbar_tickfontsize = 12,
+legend_font_pointsize = 12,
+plot_titlefontsize = 14
+)
 
-## Define convenience functions for plotting
-
+# Next we define some convenience functions for plotting.
 # Heatmap of square matrix
 function sqmatrixplot(X::Matrix; kwargs...)
     M, N = size(X)
     heatmap(
-        X, 
-        aspect_ratio=:equal, 
-        color=:Blues, 
-        xlim=(1,M), ylim=(1,N), 
+        X,
+        aspect_ratio=:equal,
+        color=:Blues,
+        xlim=(1,M), ylim=(1,N),
         yflip = true, xmirror=true;
         kwargs...)
 end
@@ -43,14 +46,14 @@ end
 function histogram_pmf(X::AbstractVector{<:Integer}; kwargs...)
     xvals = minimum(X):maximum(X)
     yvals = counts(X)./length(X)
-    bar(xvals, yvals, 
-    linewidth = 0, 
-    legend = false, 
+    bar(xvals, yvals,
+    linewidth = 0,
+    legend = false,
     xticks = xvals; kwargs...)
 end
 
 # Combine two symmetric square matrices together into the upper and lower triangle of a square matrix
-function combine_sqmatrices(lower::Matrix, upper::Matrix, diagonal::String = "lower") 
+function combine_sqmatrices(lower::Matrix, upper::Matrix, diagonal::String = "lower")
     if size(lower)[1] != size(lower)[2]
         throw(ArgumentError("Argument `lower` must be square, has dimensions $(size(lower))."))
     end
