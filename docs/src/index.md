@@ -32,7 +32,7 @@ pointestimate, index = getpointestimate(result)
 summarise(result)
 summarise(pointestimate, clusts)
 ```
-A more elaborate example can be found in the [Example](@ref) section.
+A more elaborate example can be found in the [Example](@ref) section. Examples from the paper and its supplementary material can be found in the ['examples' branch](https://github.com/abhinavnatarajan/RedClust.jl/tree/examples) of the [Github repository for RedClust.jl](https://github.com/abhinavnatarajan/RedClust.jl).
 
 ## Model
 RedClust implements the model described in Natarajan et al. (2022). The key features are-

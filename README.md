@@ -42,7 +42,7 @@ pointestimate, index = getpointestimate(result)
 # Summary of point estimate
 summarise(pointestimate, clusts)
 ```
-A more elaborate example can be found in the detailed documentation.
+A more elaborate example can be found in the detailed documentation. Examples from the paper and its supplementary material can be found in the ['examples' branch of this repository](https://github.com/abhinavnatarajan/RedClust.jl/tree/examples).
 
 ## Citing this package
 If you want to use this package in your work, please cite it as:
@@ -64,7 +64,7 @@ For BibTeX users:
 }
 ```
 
-[github-CI-img]: https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI?label=CI&logo=github&labelColor=222222
+[github-CI-img]: https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI.yml?label=CI&logo=github&labelColor=222222
 [github-CI-url]: https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/CI.yml
 
 [codecov-img]: https://img.shields.io/codecov/c/github/abhinavnatarajan/RedClust.jl?logo=codecov&labelColor=222222&logoColor=white
