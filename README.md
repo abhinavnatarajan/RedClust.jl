@@ -3,7 +3,7 @@ This branch of the repository contains the code used to run the simulations and 
 
 [![arxiv paper link][arxiv-img]][arxiv-url] Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2021. ‘Cohesion and Repulsion in Bayesian Distance Clustering’, arXiv [2107.05414](https://arxiv.org/abs/2107.05414).
 
-The code provided here does NOT contain the code for the MCMC algorithm described in the paper. That code [is available](source-link) on the `master` branch of this repository corresponding to the tag `v1.2.1` (in other words, the source repository for version 1.2.1 of `RedClust.jl`).
+The code provided here does NOT contain the code for the MCMC algorithm described in the paper. That code [is available](source-url) on the `master` branch of this repository corresponding to the tag `v1.2.1` (in other words, the source repository for version 1.2.1 of `RedClust.jl`).
 
 
 ## Instructions for Reproducing the Results in the Paper
@@ -16,5 +16,5 @@ Before running the examples, please modify and run the file `setup.jl` in order 
 
 [arxiv-img]: https://img.shields.io/badge/arxiv-2107.05414-red?style=flat&labelColor=222222
 [arxiv-url]: https://arxiv.org/abs/2107.05414
-[source-link]: https://github.com/abhinavnatarajan/RedClust.jl/releases/tag/v1.2.1
+[source-url]: https://github.com/abhinavnatarajan/RedClust.jl/releases/tag/v1.2.1
 
