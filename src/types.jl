@@ -1,3 +1,5 @@
+using LinearAlgebra: I, Diagonal
+
 const ClustLabelType = Int
 "Alias for `Vector{Int}`"
 const ClustLabelVector = Vector{ClustLabelType}
@@ -151,7 +153,7 @@ struct MCMCData
         if size(D, 1) != size(D, 2)
             error("D must be a square matrix.")
         end
-        new(Matrix(D), Matrix(log.(D .+ I(size(D,1)))))
+        new(Matrix(D), Matrix(log.(D .- Diagonal(D) .+ I(size(D,1)))))
     end
 end
 

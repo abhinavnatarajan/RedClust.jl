@@ -64,7 +64,7 @@ For BibTeX users:
 }
 ```
 
-[github-CI-img]: https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI.yml?label=CI&logo=github&labelColor=222222
+[github-CI-img]: https://img.shields.io/github/actions/workflow/status/abhinavnatarajan/RedClust.jl/CI.yml?logo=github&labelColor=222222
 [github-CI-url]: https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/CI.yml
 
 [codecov-img]: https://img.shields.io/codecov/c/github/abhinavnatarajan/RedClust.jl?logo=codecov&labelColor=222222&logoColor=white

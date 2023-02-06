@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1]
+### Added
+- tests for [`fitprior2`](@ref) in CI pipeline.
+
+### Fixed
+- error when constructing [`MCMCData`](@ref) with input distance matrix that has non-zero diagonal entries.
+
 ## [1.2.0]
 ### Added
 - added function [`fitprior2`](@ref), alternative method to fit prior hyperparameters.
