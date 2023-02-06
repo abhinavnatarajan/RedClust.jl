@@ -6,6 +6,7 @@
 
 ### Fixed
 - error when constructing [`MCMCData`](@ref) with input distance matrix that has non-zero diagonal entries.
+- edge case for [`fitprior2'](@ref) when `Kmin = Kmax = 1` or `Kmin = Kmax = N` generates a warning and fallback to default repulsion/cohesion parameters. 
 
 ## [1.2.0]
 ### Added

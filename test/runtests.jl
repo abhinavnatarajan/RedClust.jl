@@ -1,5 +1,13 @@
+local_build = "CI" ∉ keys(ENV)
+if local_build # if we are local
+    using Pkg
+    Pkg.activate(@__DIR__)
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(@__DIR__, "..")))
+    Pkg.instantiate()
+end
 using RedClust, Test, Clustering
 using StatsBase: sample
+
 
 macro throws(expr)
     quote 

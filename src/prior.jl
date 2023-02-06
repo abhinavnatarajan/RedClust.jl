@@ -232,8 +232,7 @@ function fitprior2(
 	u, v = Distributions.params(fitp)
 
 	# Generate prior on K 
-	Kprior = Float64.(counts(sampleK(η, σ, u, v, maximum([10000, 100 * N]), N)))
-	Kprior ./= sum(Kprior)
+	Kprior = pmf(sampleK(η, σ, u, v, maximum([10000, 100 * N]), N))
 	append!(Kprior, zeros(N - length(Kprior)))
 
 	# Compute likelihood parameters
@@ -243,15 +242,29 @@ function fitprior2(
 		append!(wtsB, fill(Kprior[k], szB[k]))
 	end
 	A = reduce(append!, A[Kmin:Kmax])
+	if isempty(A) # A is empty
+		@warn "The ensemble of clusterings has only one clustering, consisting of all singletons. This might be because you have set Kmin = Kmax = number of points. Falling back to defaults for cohesion parameters."
+		δ1 = 1
+		α = 1
+		β = 1
+	else
+		fitA = fit_mle(Gamma, A, wtsA)
+		δ1 = shape(fitA)
+		α = sum(szA[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ1
+		β = sum(A .* wtsA)
+	end
 	B = reduce(append!, B[Kmin:Kmax])
-	fitA = fit_mle(Gamma, A, wtsA)
-	δ1 = shape(fitA)
-	α = sum(szA[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ1
-	β = sum(A .* wtsA)
-	fitB = fit_mle(Gamma, B, wtsB)
-	δ2 = shape(fitB) 
-	ζ = sum(szB[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ2
-	γ = sum(B .* wtsB)
+	if isempty(B)
+		@warn "The ensemble of clusterings has only one clustering, consisting of a single cluster. This might be because you have set Kmin = Kmax = 1. Falling back to defaults for repulsion parameters."
+		δ2 = 1
+		ζ = 1
+		γ = 1
+	else
+		fitB = fit_mle(Gamma, B, wtsB)
+		δ2 = shape(fitB) 
+		ζ = sum(szB[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ2
+		γ = sum(B .* wtsB)
+	end
 
 	params = PriorHyperparamsList(
 		δ1 = δ1,
@@ -351,4 +364,11 @@ function detectknee(
 	# Max distance point
 	maxind = argmax(distances)
 	x[maxind], y[maxind]
+end
+
+function pmf(X::AbstractVector{<:Integer})
+    xmin = minimum(X)
+    p = counts(X)./length(X)
+    p = [zeros(xmin-1); p]
+    return p
 end
