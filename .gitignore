@@ -23,8 +23,5 @@ docs/site/
 # environment.
 Manifest.toml
 
-# Scratch
-.scratch/
-
 # File and folder names starting with _
 _*
