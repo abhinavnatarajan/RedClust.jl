@@ -38,8 +38,7 @@ colorbar_tickfontsize = 12,
 legend_font_pointsize = 12, 
 plot_titlefontsize = 14
 )
-
-# seed the default RNG so that documentation remains stable 
+## seed the default RNG so that documentation remains stable 
 seed!(44)
 #!setup
 
@@ -57,13 +56,16 @@ function sqmatrixplot(X::Matrix; kwargs...)
 end
 
 ## Histogram with integer bins
-function histogram_pmf(X::AbstractVector{<:Integer}; kwargs...)
-    xvals = minimum(X):maximum(X)
-    yvals = counts(X)./length(X)
-    bar(xvals, yvals, 
-    linewidth = 0, 
-    legend = false, 
-    xticks = xvals; kwargs...)
+function histogram_pmf(X::AbstractVector{<:Integer}; binwidth::Int=1, kwargs...)
+    xmin = minimum(X)
+    xmax = maximum(X)
+    binedges = xmin:binwidth:xmax
+    c = counts(X)./length(X)
+    bincounts = map(sum, [c[(i-xmin+1):minimum([i-xmin+1+binwidth-1, xmax-xmin+1])] for i in binedges])
+    bar(binedges, bincounts,
+    linewidth = 0,
+    legend = false,
+    xticks = binedges; kwargs...)
 end
 
 ## Combine two symmetric square matrices together into the upper and lower triangle of a square matrix
@@ -137,17 +139,17 @@ params = fitprior(points, "k-means", false)
 begin 
     pred_intracluster = sampledist(params, "intracluster", 10000)
     pred_intercluster = sampledist(params, "intercluster", 10000)
-    density(pred_intracluster, 
-    label="Simulated WCD", xlabel = "Distance", ylabel = "Density", 
+    density(pred_intercluster, 
+    label="Simulated ICD", xlabel = "Distance", ylabel = "Density", 
     linewidth = 2, linestyle = :dash)
-    density!(empirical_intracluster, 
-    label="Empirical WCD", 
-    color = 1, linewidth = 2)
-    density!(pred_intercluster, 
-    label="Simulated ICD", 
-    linewidth = 2, linestyle = :dash, color = 2)
     density!(empirical_intercluster, 
     label="Empirical ICD", 
+    color = 1, linewidth = 2)
+    density!(pred_intracluster, 
+    label="Simulated WCD", 
+    linewidth = 2, linestyle = :dash, color = 2)
+    density!(empirical_intracluster, 
+    label="Empirical WCD", 
     linewidth = 2, color = 2)
     title!("Distances: Prior Predictive vs Empirical Distribution")
 end
@@ -195,10 +197,10 @@ begin
     ylabel = "Density", xlabel = "\$p\$",
     title = "Posterior Distribution of \$p\$",
     label = "Empirical density",
-    legend_font_pointsize=12,
-    legend_position = :topleft)
+    legend_font_pointsize=12)
     density!(result.p, color=:black, linewidth = 2, linestyle=:dash,
-    label = "Kernel estimate")
+    label = "Kernel estimate",
+    legend_position = :topleft)
 end
 #md # ## Convergence statistics
 # Plot the traceplot of the autocorrelation function of ``K``:

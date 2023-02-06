@@ -3,8 +3,11 @@
 ## [1.2.0]
 ### Added
 - added function [`fitprior2`](@ref), alternative method to fit prior hyperparameters.
-- updated the basic_example file
-- added individual example files for each example shown in the paper, except for the numismatic example (for data privacy reasons).
+
+### Changed
+- pretty print for [`MCMCResult`](@ref) also shows whether the model includes repulsion.
+- moved `basic_example.jl` from the `examples` folder to `docs`. 
+- removed `examples` (added to a separate branch). 
 
 ## [1.1.0]
 ### Added

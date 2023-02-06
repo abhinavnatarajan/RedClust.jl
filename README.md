@@ -47,7 +47,22 @@ A more elaborate example can be found in the detailed documentation.
 ## Citing this package
 If you want to use this package in your work, please cite it as:
 
-Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2022. ‘Cohesion and Repulsion in Bayesian Distance Clustering’, arXiv [2107.05414](https://arxiv.org/abs/2107.05414).
+Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S., 2021. ‘Cohesion and Repulsion in Bayesian Distance Clustering’, arXiv [2107.05414](https://arxiv.org/abs/2107.05414).
+
+For BibTeX users:
+
+```latex
+@misc{https://doi.org/10.48550/arxiv.2107.05414,
+  doi = {10.48550/ARXIV.2107.05414},
+  url = {https://arxiv.org/abs/2107.05414},
+  author = {Natarajan, Abhinav and De Iorio, Maria and Heinecke, Andreas and Mayer, Emanuel and Glenn, Simon},
+  keywords = {Methodology (stat.ME), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  title = {Cohesion and Repulsion in Bayesian Distance Clustering},
+  publisher = {arXiv},
+  year = {2021},
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+```
 
 [github-CI-img]: https://img.shields.io/github/workflow/status/abhinavnatarajan/RedClust.jl/CI?label=CI&logo=github&labelColor=222222
 [github-CI-url]: https://github.com/abhinavnatarajan/RedClust.jl/actions/workflows/CI.yml
