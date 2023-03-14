@@ -67,10 +67,10 @@ makedocs(;
     pages = [
     "Introduction" => "index.md",
     "Example" => joinpath(genfolder, "example.md"),
-    "Funding Information" => "funding.md",
-    "Cite This Package" => "cite.md",
     "Public API" => "api.md",
     "Changelog" => "changelog.md"
+    "Cite This Package" => "cite.md",    
+    "Funding Information" => "funding.md",
     ]
 )
 if !local_build # deploy if not a local build

@@ -4,10 +4,10 @@ CurrentModule = RedClust
 
 # Introduction
 
-[RedClust](https://github.com/abhinavnatarajan/RedClust.jl) is a [Julia](https://julialang.org/) package for Bayesian clustering of high-dimensional Euclidean data using pairwise dissimilarity information instead of the raw observations. It uses an MCMC sampler to generate posterior samples from the space of all possible clustering structures on the data. 
+[RedClust](https://github.com/abhinavnatarajan/RedClust.jl) is a [Julia](https://julialang.org/) package for Bayesian clustering of high-dimensional Euclidean data using pairwise dissimilarity information instead of the raw observations. It uses an MCMC sampler to generate posterior samples from the space of all possible clustering structures on the data, and it is an implementation of the algorithm described by [Natarajan et al., 2023](#natarajan).
 
 ## Installation
-The package can be installed by typing `]add RedClust` into the Julia REPL or by the usual method:
+The package can be installed by typing `]add RedClust` into the Julia REPL or by using `Pkg`:
 ```julia
 using Pkg
 Pkg.add("RedClust")
@@ -106,6 +106,10 @@ for Bayesian clustering’, _Journal of Computational and Graphical Statistics_ 
 ```Miller, J., Betancourt, B., Zaidi, A., Wallach, H. and Steorts, R. C. (2015), ‘Microclustering:
 When the cluster sizes grow sublinearly with the size of the data set’, arXiv
 [1512.00792](https://arxiv.org/abs/1512.00792).
+
+```@raw html
+<a id="natarajan"></a>
+```Natarajan, A., De Iorio, M., Heinecke, A., Mayer, E. and Glenn, S. (2023). ‘Cohesion and Repulsion in Bayesian Distance Clustering’, _Journal of the Americal Statistical Association_. DOI: [10.1080/01621459.2023.2191821](https://doi.org/10.1080/01621459.2023.2191821).
 
 ```@raw html
 <a id="wade"></a>
