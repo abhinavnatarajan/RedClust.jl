@@ -10,7 +10,7 @@ For BibTeX users:
   doi = {10.1080/01621459.2023.2191821},
   author = {Natarajan, Abhinav and De Iorio, Maria and Heinecke, Andreas and Mayer, Emanuel and Glenn, Simon},
   title = {Cohesion and Repulsion in Bayesian Distance Clustering},
-  publisher = {Journal of the American Statistical Association},
+  journal = {Journal of the American Statistical Association},
   year = {2023}
 }
 ```
