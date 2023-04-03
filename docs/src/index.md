@@ -20,7 +20,7 @@ using RedClust
 points, distM, clusts, probs, oracle_coclustering = 
 	generatemixture(N, K; α = 10, σ = data_σ, dim = data_dim)
 # Let RedClust choose the best prior hyperparameters
-params = fitprior(pnts, "k-means", false)
+params = fitprior(points, "k-means", false)
 # Set the MCMC options
 options = MCMCOptionsList(numiters = 5000)
 data = MCMCData(points)
