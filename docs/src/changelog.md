@@ -1,4 +1,8 @@
 # Changelog
+## [1.2.2]
+### Added
+- tests for Julia 1.9 in CI matrix
+- HDF5.jl v0.17 compatibility
 
 ## [1.2.1]
 ### Added
