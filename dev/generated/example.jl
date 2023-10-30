@@ -259,4 +259,3 @@ title = "True Clustering vs MAP Point Estimate")
 summarise(pointestimate, clusts)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
-
