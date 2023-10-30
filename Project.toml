@@ -1,7 +1,7 @@
 name = "RedClust"
 uuid = "bf1adee6-87fe-4679-8d23-51fe99940a25"
 authors = ["Abhinav Natarajan <abhinav.v.natarajan@gmail.com>"]
-version = "1.2.1"
+version = "1.2.2"
 
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
