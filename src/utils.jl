@@ -1,11 +1,3 @@
-using Distributions: Dirichlet, MvNormal, pdf
-using LinearAlgebra: I
-using LoopVectorization: @turbo
-using Random: rand, AbstractRNG, TaskLocalRNG, seed!
-using StatsBase: autocor, wsample, levelsmap, mean
-using Printf: @sprintf
-using Dates
-
 # use the Gumbel-max trick to sample from a vector of discrete log-probabilities
 @inline function sample_logweights(logprobs::AbstractVector{Float64})::Int
     logprobs .-= minimum(logprobs)
@@ -50,39 +42,39 @@ function iac_ess_acf(x::AbstractVector{<:Real})
     acf = autocor(x)
     iac = sum(acf) * 2
     ess = length(x) / iac
-    return (iac = iac, ess = ess, acf = acf)
+    return (iac=iac, ess=ess, acf=acf)
 end
 
 function uppertriangle(
     M::Matrix{T}
-    )::Vector{T} where {T}
+)::Vector{T} where {T}
     n = size(M, 1)
-    [M[i, j] for i in 1:n for j in (i + 1):n]
+    [M[i, j] for i in 1:n for j in (i+1):n]
 end
 
 """
-    adjacencymatrix(clusts::ClustLabelVector) -> Matrix{Bool}
-Returns the `n`×`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`. 
-""" 
+adjacencymatrix(clusts::ClustLabelVector) -> Matrix{Bool}
+Returns the `n`×`n` adjacency matrix corresponding to the given cluster label vector `clusts`, where `n = length(clusts)`.
+"""
 function adjacencymatrix(
     clusts::ClustLabelVector
-    )::Matrix{Bool}
+)::Matrix{Bool}
     clusts .== clusts'
 end
 
 """
-    sortlabels(x::ClustLabelVector) -> ClustLabelVector
+sortlabels(x::ClustLabelVector) -> ClustLabelVector
 Returns a cluster label vector `y` such that `x` and `y` have the same adjacency structure and labels in `y` occur in sorted ascending order.
 """
 function sortlabels(
     x::ClustLabelVector
-    )::ClustLabelVector 
+)::ClustLabelVector
     temp = levelsmap(x)
     [temp[i] for i in x]
 end
 
 """
-    generatemixture(N, K; [α, dim, radius, σ, rng])
+generatemixture(N, K; [α, dim, radius, σ, rng])
 
 Generates a multivariate Normal mixture, with kernel weights generated from a Dirichlet prior. The kernels are centred at the vertices of a `dim`-dimensional simplex with edge length `radius`.
 
@@ -106,8 +98,8 @@ Named tuple containing the following fields-
 - `probs::Float64`: vector of `K` cluster weights generated from the Dirichlet prior, used to generate the observations.
 - `oracle_coclustering::Matrix{Float64}`: `N`×`N` matrix of co-clustering probabilities, calculated assuming full knowledge of the cluster centres and cluster weights.
 """
-function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, radius::Real = 1, σ::Real = 0.1, rng::Union{AbstractRNG, <:Integer} = TaskLocalRNG())
-    # input validation 
+function generatemixture(N::Integer, K::Integer; α::Real=K, dim::Real=K, radius::Real=1, σ::Real=0.1, rng::Union{AbstractRNG,<:Integer}=TaskLocalRNG())
+    # input validation
     N < 1 && throw(ArgumentError("N must be greater than 1."))
     (K < 1 || K > N) && throw(ArgumentError("K must satisfy 1 ≤ K ≤ N."))
     α ≤ 0 && throw(ArgumentError("α must be positive."))
@@ -124,7 +116,7 @@ function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, ra
     # generate cluster centres
     clust_centres = fill(zeros(dim), K)
     for i = 1:K
-        clust_centres[i] = cat(zeros(i - 1), radius, zeros(dim - i); dims = 1)
+        clust_centres[i] = cat(zeros(i - 1), radius, zeros(dim - i); dims=1)
     end
 
     # generate points
@@ -138,7 +130,7 @@ function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, ra
     numiters = 5000
     oracle_posterior = zeros(K, N)
     oracle_coclustering = zeros(N, N)
-    for c in 1:numiters
+    for _ in 1:numiters
         tempprobs = rand(rng, Dirichlet(K, α))
         for i = 1:N
             for j = 1:K
@@ -149,13 +141,13 @@ function generatemixture(N::Integer, K::Integer; α::Real = K, dim::Real = K, ra
         oracle_coclustering += oracle_posterior' * oracle_posterior
     end
     oracle_coclustering ./= numiters #oracle coclustering matrix
-    distM = [pnts[i][j] for i in 1:N, j in 1:dim]' |> 
-    (x -> pairwise(Euclidean(), x, dims = 2))
-    return (points = pnts, distancematrix = distM, clusts = clusts, probs = probs, oracle_coclustering = oracle_coclustering)
+    distM = [pnts[i][j] for i in 1:N, j in 1:dim]' |>
+            (x -> pairwise(Euclidean(), x, dims=2))
+    return (points=pnts, distancematrix=distM, clusts=clusts, probs=probs, oracle_coclustering=oracle_coclustering)
 end
 
 """
-    makematrix(x::AbstractVector{<:AbstractVector}) -> Matrix
+makematrix(x::AbstractVector{<:AbstractVector}) -> Matrix
 
 Convert a vector of vectors into a matrix, where each vector becomes a column in the matrix.
 """
@@ -176,7 +168,7 @@ function prettytime(t)
         x = Dates.canonicalize(Dates.Second(Integer(floor(t))))
         out = ""
         for i in 1:length(x.periods)
-            out *= string(x.periods[i].value) * " " 
+            out *= string(x.periods[i].value) * " "
             if typeof(x.periods[i]) == Second
                 out *= "s"
             elseif typeof(x.periods[i]) == Minute
@@ -186,8 +178,8 @@ function prettytime(t)
             elseif typeof(x.periods[i]) == Day
                 out *= "day" * (x.periods[i].value != 1 ? "s" : "")
             end
-            if i != length(x.periods) 
-                out *=  " "
+            if i != length(x.periods)
+                out *= " "
             end
         end
     end

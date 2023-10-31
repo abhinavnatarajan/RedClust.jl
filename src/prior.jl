@@ -1,38 +1,31 @@
-using Clustering: kmeans, kmedoids
-using Distances: pairwise, Euclidean
-using Distributions: fit_mle, Gamma, shape, rate, Distributions, Beta
-using ProgressBars: ProgressBar
-using StatsBase: counts, std
-using SpecialFunctions: logbeta
-
 """
-    fitprior(data, algo, diss = false; 
-	Kmin = 1, 
-	Kmax = Int(floor(size(data)[end] / 2), 
+	fitprior(data, algo, diss = false;
+	Kmin = 1,
+	Kmax = Int(floor(size(data)[end] / 2),
 	verbose = true)
 
-Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids and the elbow method, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.   
+Determines the best prior hyperparameters from the data. A notional clustering is obtained using k-means or k-medoids and the elbow method, and the distances are split into within-cluster distances and inter-cluster distances based on the notional clustering. These distances are then used to fit the prior hyperparameters using MLE and empirical Bayes sampling.
 
 # Required Arguments
-- `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 
+- `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities.
 - `algo::String`: must be one of `"k-means"` or `"k-medoids"`.
 
 # Optional Arguments
-- `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
-- `Kmin::Integer`: minimum number of clusters to scan for the elbow method.  
+- `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix.
+- `Kmin::Integer`: minimum number of clusters to scan for the elbow method.
 - `Kmax::Integer`: maximum number of clusters to scan for the elbow method. If left unspecified, it is set to half the number of observations.
-- `verbose::Bool`: if false, disables all info messages and progress bars. 
+- `verbose::Bool`: if false, disables all info messages and progress bars.
 
 # Returns
 An object of type [`PriorHyperparamsList`](@ref).
 """
 function fitprior(
 	data::Union{Vector{Vector{Float64}}, Matrix{Float64}},
-	algo::String, 
-	diss::Bool = false; 
-	Kmin::Integer = 1, 
+	algo::String,
+	diss::Bool = false;
+	Kmin::Integer = 1,
 	Kmax::Integer = Int(floor(size(data)[end] / 2)),
-	verbose::Bool = true 
+	verbose::Bool = true
 )
 	ostream = verbose ? stdout : devnull
 	printstyled(ostream, "Fitting prior hyperparameters\n"; bold = true)
@@ -72,7 +65,7 @@ function fitprior(
 		objective[k] = temp.totalcost
 		if !temp.converged
 			@warn "Clustering did not converge at K = $k"
-		end		
+		end
 	end
 	elbow = detectknee(Kmin:Kmax, objective)[1]
 	K = elbow
@@ -112,7 +105,7 @@ function fitprior(
 		γ = 1
 	else
 		fitB = fit_mle(Gamma, B)
-		δ2 = shape(fitB) 
+		δ2 = shape(fitB)
 		ζ = length(B) * δ2
 		γ = sum(B)
 	end
@@ -123,11 +116,11 @@ function fitprior(
 		α = α,
 		β = β,
 		ζ = ζ,
-		γ = γ, 
+		γ = γ,
 		η = η,
 		σ = σ,
 		proposalsd_r = proposalsd_r,
-		u = u, 
+		u = u,
 		v = v,
 		K_initial = K
 	)
@@ -135,33 +128,33 @@ function fitprior(
 end
 
 @doc raw"""
-    fitprior2(data, algo, diss = false; 
-	Kmin = 1, 
-	Kmax = Int(floor(size(data)[end] / 2), 
+	fitprior2(data, algo, diss = false;
+	Kmin = 1,
+	Kmax = Int(floor(size(data)[end] / 2),
 	verbose = true)
 
-Determines the best prior hyperparameters from the data. Uses the same method as [`fitprior`](@ref) to obtain values for ``\sigma``, ``\eta``, ``u``, and ``v``, but derives values for the cluster-specific parameters by considering within-cluster and cross-cluster distances over clusterings with ``K`` clusters for all values of ``K \in [K_\mathrm{min}, K_\mathrm{max}]``, weighted by the prior predictive distribution of ``K`` in that range.   
+Determines the best prior hyperparameters from the data. Uses the same method as [`fitprior`](@ref) to obtain values for ``\sigma``, ``\eta``, ``u``, and ``v``, but derives values for the cluster-specific parameters by considering within-cluster and cross-cluster distances over clusterings with ``K`` clusters for all values of ``K \in [K_\mathrm{min}, K_\mathrm{max}]``, weighted by the prior predictive distribution of ``K`` in that range.
 
 # Required Arguments
-- `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities. 
+- `data::Union{Vector{Vector{Float64}}, Matrix{Float64}}`: can either be a vector of (possibly multi-dimensional) observations, or a matrix with each column an observation, or a square matrix of pairwise dissimilarities.
 - `algo::String`: must be one of `"k-means"` or `"k-medoids"`.
 
 # Optional Arguments
-- `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix. 
-- `Kmin::Integer`: minimum number of clusters to scan for the elbow method.  
+- `diss::bool`: if true, `data` will be assumed to be a pairwise dissimilarity matrix.
+- `Kmin::Integer`: minimum number of clusters to scan for the elbow method.
 - `Kmax::Integer`: maximum number of clusters to scan for the elbow method. If left unspecified, it is set to half the number of observations.
-- `verbose::Bool`: if false, disables all info messages and progress bars. 
+- `verbose::Bool`: if false, disables all info messages and progress bars.
 
 # Returns
 An object of type [`PriorHyperparamsList`](@ref).
 """
 function fitprior2(
 	data::Union{Vector{Vector{Float64}}, Matrix{Float64}},
-	algo::String, 
-	diss::Bool = false; 
-	Kmin::Integer = 1, 
+	algo::String,
+	diss::Bool = false;
+	Kmin::Integer = 1,
 	Kmax::Integer = Int(floor(size(data)[end] / 2)),
-	verbose::Bool = true 
+	verbose::Bool = true
 )
 	ostream = verbose ? stdout : devnull
 	printstyled(ostream, "Fitting prior hyperparameters\n"; bold = true)
@@ -231,7 +224,7 @@ function fitprior2(
 	fitp = fit_mle(Beta, temp.p)
 	u, v = Distributions.params(fitp)
 
-	# Generate prior on K 
+	# Generate prior on K
 	Kprior = pmf(sampleK(η, σ, u, v, maximum([10000, 100 * N]), N))
 	append!(Kprior, zeros(N - length(Kprior)))
 
@@ -261,7 +254,7 @@ function fitprior2(
 		γ = 1
 	else
 		fitB = fit_mle(Gamma, B, wtsB)
-		δ2 = shape(fitB) 
+		δ2 = shape(fitB)
 		ζ = sum(szB[Kmin:Kmax] .* Kprior[Kmin:Kmax]) * δ2
 		γ = sum(B .* wtsB)
 	end
@@ -272,11 +265,11 @@ function fitprior2(
 		α = α,
 		β = β,
 		ζ = ζ,
-		γ = γ, 
+		γ = γ,
 		η = η,
 		σ = σ,
 		proposalsd_r = proposalsd_r,
-		u = u, 
+		u = u,
 		v = v,
 		K_initial = K
 	)
@@ -322,7 +315,7 @@ Returns a vector of length `numsamples` containing samples of ``K`` (number of c
 """
 function sampleK(η::Real, σ::Real, u::Real, v::Real, numsamples::Int, n::Int)
 	# Input validation
-	if n < 1 
+	if n < 1
 		throw(ArgumentError("n must be a positive integer."))
 	end
 	if numsamples < 1
@@ -345,7 +338,7 @@ end
 sampleK(params::PriorHyperparamsList, numsamples::Int, n::Int)::Vector{Int} = sampleK(params.η, params.σ, params.u, params.v, numsamples, n)
 
 function detectknee(
-	xvalues::AbstractVector{<:Real}, 
+	xvalues::AbstractVector{<:Real},
 	yvalues::AbstractVector{<:Real}
 	)::NTuple{2,Real}
 	# Max values to create line
@@ -367,8 +360,8 @@ function detectknee(
 end
 
 function pmf(X::AbstractVector{<:Integer})
-    xmin = minimum(X)
-    p = counts(X)./length(X)
-    p = [zeros(xmin-1); p]
-    return p
+	xmin = minimum(X)
+	p = counts(X)./length(X)
+	p = [zeros(xmin-1); p]
+	return p
 end
